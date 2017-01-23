@@ -25,9 +25,12 @@ class MerchantController extends Controller
         
         $invoice_id = DB::table('invoices')->insertGetId( $data );
         
-        return $this->seedInvoiceProducts( $invoice_id, $invoice['products'] );
+        //$this->seedInvoiceProducts( $invoice_id, $invoice['products'] );
+        return $this->seedMerchantHistory( $invoice_id, $invoice );
         
     }
+    
+    
     
     
     
@@ -47,12 +50,33 @@ class MerchantController extends Controller
                 "quantity"      => $product['quantity'],
             ];
 
-            DB::table('invoice_products')->insert( $data );
+            if( !DB::table('invoice_products')->insert( $data ) )
+                return response()->json( "Failed To Seed invoice Products", 400 );
         
         endforeach;
         
     }
     
+    
+    
+    
+    
+    
+    
+    public function seedMerchantHistory( $invoice_id, $invoice )
+    {
+        
+        $data = [
+                "merchant_id"      => $invoice['merchant'], 
+                "invoice_id"       => $invoice_id,
+                "transaction_id"   => str_random(40),
+                "total_price"      => $invoice['totalprice'],
+                "status"           => "PENDING",
+                "result_code"      => 1,
+            ];
+        
+        DB::table('merchant_history')->insert( $data );
+    }
     
     
     
