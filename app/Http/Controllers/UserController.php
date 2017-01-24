@@ -86,7 +86,7 @@ class UserController extends Controller
             return response()->json("User Not Found",404);
         
         
-        return response()->json("OK",200);
+        return response()->json( $this->setToken( $user ), 200 );
         
     }
     
