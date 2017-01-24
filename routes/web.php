@@ -11,9 +11,7 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 
 Route::post('/okeyapi', 'MerchantController@processinvoice');
+
+Route::post('/checkuser', 'UserController@checkUser');
