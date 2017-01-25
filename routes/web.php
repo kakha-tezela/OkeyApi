@@ -14,8 +14,15 @@
 
 Route::post('/okeyapi', 'MerchantController@processinvoice');
 
+
+// Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');
 
+// User Authorization
 Route::post('/login', 'UserController@login');
 
+//Check Token
 Route::post('/checktoken', 'UserController@getAuthenticatedUser');
+
+// User Data
+Route::post('/userdata', 'UserController@userData');

@@ -23,7 +23,6 @@ class UserController extends Controller
         
         $user = User::where( 'personal_id', '=', $request->pid )->first();
         
-        
         if( $user === null )
             return response()->json( "User Not Found", 404 );
         
@@ -81,18 +80,33 @@ class UserController extends Controller
         
         $user = User::where( 'personal_id', '=', $request->pid )
                     ->where( 'password', '=', $request->password )
-                    ->first();
+                    ->first([ 'firstname','lastname','email','personal_id' ]);
         
         
         if( $user === null )
             return response()->json("User Not Found",404);
-        
         
         return response()->json( $this->setToken( $user ), 200 );
         
     }
     
     
+    
+    
+    
+    public function userData( Request $request )
+    {
+        if( !$request->has( 'pid' ) )
+            return response()->json( "Personal Id Not Provided", 404 );
+        
+        $user = User::where( 'personal_id', '=', $request->pid )->first();
+        
+        if( $user === null )
+            return response()->json( "User Not Found", 404 );
+        
+        
+        return response()->json( $user, 200 );
+    }
     
     
 }
