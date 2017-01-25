@@ -18,6 +18,9 @@ Route::post('/okeyapi', 'MerchantController@processinvoice');
 // Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');
 
+// User Registration
+Route::post('/register', 'UserController@register')->middleware('registration');
+
 // User Authorization
 Route::post('/login', 'UserController@login');
 
