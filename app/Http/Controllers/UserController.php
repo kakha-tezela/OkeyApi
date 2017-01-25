@@ -58,6 +58,8 @@ class UserController extends Controller
     
     
     
+    
+    
      // set token
     public function setToken( $user )
     {
@@ -89,7 +91,6 @@ class UserController extends Controller
         return response()->json( $this->setToken( $user ), 200 );
         
     }
-    
     
     
     

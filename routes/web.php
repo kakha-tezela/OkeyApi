@@ -17,3 +17,5 @@ Route::post('/okeyapi', 'MerchantController@processinvoice');
 Route::post('/checkuser', 'UserController@checkUser');
 
 Route::post('/login', 'UserController@login');
+
+Route::post('/checktoken', 'UserController@getAuthenticatedUser');
