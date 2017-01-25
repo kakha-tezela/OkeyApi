@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\User;
+use Carbon\Carbon;
 use Lcobucci\JWT\Configuration;
 use JWTAuth;
 use JWTFactory;
@@ -19,7 +20,28 @@ class UserController extends Controller
     
     public function register( Request $request )
     {
-        return $request->all();
+        $user = new User;
+//           str_replace('/','-',$request->birth_date)
+        $user->firstname = $request->firstname;
+        $user->lastname = $request->lastname;
+        $user->gender = $request->gender;
+        $user->birth_date = Carbon::parse( $request->birth_date )->format('Y-m-d');
+        $user->address = $request->address;
+        $user->city_id = $request->city_id;
+        $user->phone = $request->phone;
+        $user->personal_id = $request->pid;
+        $user->email = $request->email;
+        $user->username = $request->username;
+        $user->password = $request->password;
+        $user->company_id = 0;
+        $user->social_id = $request->social_id;
+        $user->work_place = $request->work_place;
+        $user->salary_id = $request->salary_id;
+        $user->balance = 0;
+        $user->status = 1;
+       
+        $user->save();
+        
     }
     
     

@@ -9,4 +9,6 @@ class User extends Model implements AuthenticatableContract
 {
     //
     use Authenticatable;
+    
+    public $timestamps = false;
 }

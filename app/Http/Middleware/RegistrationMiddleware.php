@@ -94,8 +94,6 @@ class RegistrationMiddleware
             
             
             
-            
-            
             if( isset( $failed['social_id'] ) ):
                 
                 if( isset( $failed['social_id']['Required'] ) )
@@ -113,16 +111,12 @@ class RegistrationMiddleware
             
             
             
-            
-            
-            
             if( isset( $failed['password'] ) ):
                 
                 if( isset( $failed['password']['Required'] ) )
                    return response()->json( "Username Missing", 400 );
                 
             endif;
-            
             
             
             
@@ -157,8 +151,6 @@ class RegistrationMiddleware
                 }
 
             endif;
-            
-            
             
             
             
