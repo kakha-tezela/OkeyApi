@@ -15,11 +15,14 @@ class MerchantController extends Controller
         $invoice = $request->all();
 
         $data = [
-            "merchant_id" => $invoice['merchant'],
-            "sum_price"   => $invoice['totalprice'],
-            "address"     => $invoice['address'],
-            "city"        => $invoice['city'],
-            "ip"          => $request->ip()
+            
+            "merchant_id"      => $invoice['merchant'],
+            "price"            => $invoice['totalprice'],
+            "shipping_price"   => $invoice['shipping_price'],
+            "sum_price"        => $invoice['totalprice'] + $invoice['shipping_price'],
+            "address"          => $invoice['address'],
+            "city"             => $invoice['city'],
+            "ip"               => $request->ip()
         ];
         
         

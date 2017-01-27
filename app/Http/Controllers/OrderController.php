@@ -94,6 +94,7 @@ class OrderController extends Controller
     {
         $order_data = Order::where( 'id', '=', $order_id )->first(['prepay','invoice_id','interest']);
         $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
+        $price = DB::table('invoices')->where( 'id', '=', $order_data->invoice_id )->first(['price']);
         $data = [];
         
         
@@ -107,7 +108,7 @@ class OrderController extends Controller
                 'price'         => $product->price,
                 'quantity'      => $product->quantity,
                 'sum_price'     => $product->price * $product->quantity, // quantity * price
-                'prepay'        => $order_data->prepay,
+                'prepay'        => ( $price->price / $order_data->prepay ) * ( $product->price * $product->quantity ),
                 'interest'      => $order_data->interest,
                 'total_price'   => 5000,// to be completed
             ];
