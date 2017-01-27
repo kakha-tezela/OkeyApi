@@ -21,9 +21,9 @@ class OrderController extends Controller
         $invoice_data = DB::table('invoices')->where( 'id', '=', $invoice_id->invoice_id )->first(); 
         
         $interest = DB::table('merchant_services')->where( 'service_id', '=', $request['service_id'] )
-                    ->where( 'min_price', '<=', $invoice_data->price )
-                    ->where( 'max_price', '>=', $invoice_data->price )
-                    ->first(['interest']);
+                    ->where( 'min_price', '<=', $invoice_data->sum_price )
+                    ->where( 'max_price', '>=', $invoice_data->sum_price )
+                    ->first(['interest','interest_period']);
         
         
         
@@ -40,12 +40,26 @@ class OrderController extends Controller
         $order->price = $invoice_data->price; 
         $order->prepay = $request['prepay'];
         $order->status = 0;
-        $order->total_amount = 2000; // to be completed
-//                $request->total_amount; //calculation invoice sum price * ( interest / month ) //depends on service id
+        $order->total_amount = $this->totalAmount( $invoice_data->sum_price, $interest->interest, $request['months'], $interest->interest_period );
         $order->interest = $interest->interest;
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
         $order->save();        
+    }
+    
+    
+    
+    public function totalAmount( $sum_price, $interest, $month, $period )
+    {
+        if( $period == "M" )
+        {
+            return $sum_price * ( ( $interest * $month ) / 100 + 1 );
+        }
+        elseif ( $period == "Y" )
+        {
+            return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 + 1 );
+        }
+        
     }
     
 }
