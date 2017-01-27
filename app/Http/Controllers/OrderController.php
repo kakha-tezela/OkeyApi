@@ -13,17 +13,34 @@ class OrderController extends Controller
     public function addOrder( $user_id, $request )
     {
         
-        
         $invoice_id = DB::table('merchant_history')->where( 'transaction_id', '=', $request['transaction_id'] )->first(['invoice_id']); 
         
+        if( $invoice_id === null )
+            return response()->json( "Failed To Get Invoice Id", 400 );
+        
+        
         $user_data = DB::table('users')->where( 'id', '=', $user_id )->first();
+            
+        if( $user_data === null )
+            return response()->json( "Failed To Get User Data", 400 );
+        
         
         $invoice_data = DB::table('invoices')->where( 'id', '=', $invoice_id->invoice_id )->first(); 
+        
+        if( $invoice_data === null )
+            return response()->json( "Failed To Get Invoice Data", 400 );
+        
+        
         
         $interest = DB::table('merchant_services')->where( 'service_id', '=', $request['service_id'] )
                     ->where( 'min_price', '<=', $invoice_data->sum_price )
                     ->where( 'max_price', '>=', $invoice_data->sum_price )
                     ->first(['interest','interest_period']);
+        
+        
+        if( $interest === null )
+            return response()->json( "Failed To Get Interest", 400 );
+        
         
         
         
@@ -44,8 +61,15 @@ class OrderController extends Controller
         $order->interest = $interest->interest;
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
-        $order->save();        
+        
+        if( $order->save() )
+            return $this->orderedProductsSeeder( $order->id );
+        
     }
+    
+    
+    
+    
     
     
     
@@ -59,6 +83,40 @@ class OrderController extends Controller
         {
             return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 + 1 );
         }
+        
+    }
+    
+    
+    
+    
+    
+    public function orderedProductsSeeder( $order_id )
+    {
+        $order_data = Order::where( 'id', '=', $order_id )->first(['prepay','invoice_id','interest']);
+        $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
+        $data = [];
+        
+        
+        foreach( $products as $product ):
+        
+            $row = [
+
+                'order_id'      => $order_id,
+                'title'         => $product->title,
+                'category_id'   => $product->category_id,
+                'price'         => $product->price,
+                'quantity'      => $product->quantity,
+                'sum_price'     => $product->price * $product->quantity, // quantity * price
+                'prepay'        => $order_data->prepay,
+                'interest'      => $order_data->interest,
+                'total_price'   => 5000,// to be completed
+            ];
+        
+            $data[] = $row;
+        
+        endforeach;
+        
+        DB::table('ordered_products')->insert( $data );
         
     }
     

@@ -19,20 +19,27 @@ class RegistrationMiddleware
          
         $validator = Validator::make( $request->all(),[
             
-                'firstname'   => 'bail|required|alpha',
-                'lastname'    => 'bail|required|alpha',
-                'email'       => 'bail|required|email|unique:users',
-                'phone'       => 'bail|required|unique:users|digits_between:9,9|regex:/^5/',
-                'gender'      => 'bail|required|digits_between:1,1',
-                'birth_date'  => 'bail|required|date_format:"d/m/Y"',   
-                'address'     => 'required',
-                'city_id'     => 'bail|required|digits_between:1,4',
-                'pid'         => 'bail|unique:users,personal_id|digits_between:11,11',
-                'username'    => 'bail|required|unique:users,username',
-                'password'    => 'bail|required',
-                'social_id'   => 'bail|required|digits_between:1,1',
-                'work_place'  => 'bail|required',
-                'salary_id'   => 'bail|required|digits_between:1,1',
+                'firstname'         => 'bail|required|alpha',
+                'lastname'          => 'bail|required|alpha',
+                'email'             => 'bail|required|email|unique:users,email',
+                'phone'             => 'bail|required|unique:users,phone|digits_between:9,9|regex:/^5/',
+                'gender'            => 'bail|required|digits_between:1,1',
+                'birth_date'        => 'bail|required|date_format:"d/m/Y"',   
+                'address'           => 'required',
+                'city_id'           => 'bail|required|digits_between:1,4',
+                'pid'               => 'bail|unique:users,personal_id|digits_between:11,11',
+                'username'          => 'bail|required|unique:users,username',
+                'password'          => 'bail|required',
+                'social_id'         => 'bail|required|digits_between:1,1',
+                'work_place'        => 'bail|required',
+                'salary_id'         => 'bail|required|digits_between:1,1',
+                'transaction_id'    => 'bail|required',
+                'service_id'        => 'bail|required',
+                'merchant_id'       => 'bail|required',
+                'months'            => 'bail|required|numeric',
+                'prepay'            => 'bail|required|numeric',
+                'first_pay_date'    => 'bail|required|date_format:"d/m/Y"',
+                'end_date'          => 'bail|required|date_format:"d/m/Y"',
         ]);
 
         
@@ -46,6 +53,136 @@ class RegistrationMiddleware
             
             
             //Detect which rule caused fail
+            
+            if( isset( $failed['end_date'] ) ):
+
+                if( isset( $failed['end_date']['Required'] ) )
+                {
+                   return response()->json( "End Pay Date is Missing", 400 );
+                }
+                elseif( $failed['end_date']['DateFormat'] )
+                {
+                    return response()->json( "End Pay Date Format Incorrect", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['first_pay_date'] ) ):
+
+                if( isset( $failed['first_pay_date']['Required'] ) )
+                {
+                   return response()->json( "First Pay Date is Missing", 400 );
+                }
+                elseif( $failed['first_pay_date']['DateFormat'] )
+                {
+                    return response()->json( "First Pay Date Format Incorrect", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['prepay'] ) ):
+
+                if( isset( $failed['prepay']['Required'] ) )
+                {
+                   return response()->json( "Prepay is Missing", 400 );
+                }
+                elseif( $failed['prepay']['Numeric'] )
+                {
+                    return response()->json( "Prepay Format Incorrect", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['months'] ) ):
+
+                if( isset( $failed['months']['Required'] ) )
+                {
+                   return response()->json( "Months is Missing", 400 );
+                }
+                elseif( $failed['months']['Numeric'] )
+                {
+                    return response()->json( "Months Format Incorrect", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['merchant_id'] ) ):
+
+                if( isset( $failed['merchant_id']['Required'] ) )
+                {
+                   return response()->json( "Merchant Id is Missing", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+             if( isset( $failed['service_id'] ) ):
+
+                if( isset( $failed['service_id']['Required'] ) )
+                {
+                   return response()->json( "Service Id is Missing", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['transaction_id'] ) ):
+
+                if( isset( $failed['transaction_id']['Required'] ) )
+                {
+                   return response()->json( "Transaction Id is Missing", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
             
             if( isset( $failed['birth_date'] ) ):
 
