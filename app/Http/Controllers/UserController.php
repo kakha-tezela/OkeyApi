@@ -10,18 +10,18 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
-
+use App\Http\Controllers\OrderController;
 
 
 class UserController extends Controller
 {
 
     
-    
     public function register( Request $request )
     {
+        
+        
         $user = new User;
-//           str_replace('/','-',$request->birth_date)
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
         $user->gender = $request->gender;
@@ -39,8 +39,15 @@ class UserController extends Controller
         $user->salary_id = $request->salary_id;
         $user->balance = 0;
         $user->status = 1;
-       
-        $user->save();
+        
+        if( $user->save() )
+            $user_id = $user->id;
+        
+        
+        
+        //Seed orders Table
+        $order = new OrderController();
+        return $order->addOrder( $user_id, $request->all() );
         
     }
     
@@ -162,9 +169,6 @@ class UserController extends Controller
         $token = JWTAuth::fromUser( $user );
         return $token;
     }
-    
-    
-    
     
     
     
