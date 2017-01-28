@@ -108,6 +108,8 @@ class OrderController extends Controller
         
         foreach( $products as $product ):
             $products_price = $product->price * $product->quantity;
+            $prepay = ( $price->price / $order_data->prepay ) * $products_price;
+            $product_last_price = $products_price-$prepay;
             $interest_rate = $order_data->interest/100+1;
             $row = [
 
@@ -118,8 +120,9 @@ class OrderController extends Controller
                 'quantity'      => $product->quantity,
                 'sum_price'     => $products_price, // quantity * price
                 'prepay'        => ( $price->price / $order_data->prepay ) * $products_price,
-                'interest'      => $products_price*$interest_rate,
-                'total_price'   => $this->totalAmount( $products_price, $interest->interest, $order_data->months, $interest->interest_period ),// to be completed
+                'last_price'     => $product_last_price, 
+                'interest'      => $product_last_price*$interest_rate,
+                'total_price'   => $this->totalAmount( $product_last_price, $interest->interest, $order_data->months, $interest->interest_period ),// to be completed
             ];
         
             $data[] = $row;
