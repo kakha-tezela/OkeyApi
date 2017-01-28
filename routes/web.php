@@ -12,9 +12,6 @@
 */
 
 
-Route::post('/okeyapi', 'MerchantController@processinvoice');
-
-
 // Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');
 
@@ -28,5 +25,8 @@ Route::post('/login', 'UserController@login');
 //Check Token
 Route::post('/checktoken', 'UserController@getAuthenticatedUser');
 
-// User Data
+// Get User Data
 Route::post('/userdata', 'UserController@userData');
+
+
+Route::post('/okeyapi', 'MerchantController@processinvoice');

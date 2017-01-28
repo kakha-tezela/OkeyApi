@@ -62,8 +62,12 @@ class OrderController extends Controller
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
         
-        if( $order->save() )
-            return $this->orderedProductsSeeder( $order->id );
+        if( $order->save() ):
+            
+            $this->orderedProductsSeeder( $order->id );
+            return $this->orderShippingSeeder( $order->id, $request );
+            
+        endif;
         
     }
     
@@ -76,14 +80,9 @@ class OrderController extends Controller
     public function totalAmount( $sum_price, $interest, $month, $period )
     {
         if( $period == "M" )
-        {
             return $sum_price * ( ( $interest * $month ) / 100 + 1 );
-        }
         elseif ( $period == "Y" )
-        {
             return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 + 1 );
-        }
-        
     }
     
     
@@ -117,8 +116,41 @@ class OrderController extends Controller
         
         endforeach;
         
-        DB::table('ordered_products')->insert( $data );
+        $added = DB::table('ordered_products')->insert( $data );
+        
+        if( !$added )
+            return response()->json("Seeding Ordered_products Failed ! ", 400 );
+        
         
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public function orderShippingSeeder( $order_id, $request )
+    {
+        $data = [
+            'order_id' => $order_id,
+            'city_id'  => $request['city_id'],
+            'address'  => $request['address'],
+            'phone'    => $request['phone'],
+        ];
+        
+        $added = DB::table('order_shippings')->insert( $data );
+        
+        if( !$added )
+            return response()->json("Seeding order_shippings Failed ! ", 400 );
+        
+    }
+    
+    
+    
+    
     
 }
