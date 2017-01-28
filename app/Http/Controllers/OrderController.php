@@ -92,7 +92,7 @@ class OrderController extends Controller
     
     public function orderedProductsSeeder( $order_id )
     {
-        $order_data = Order::where( 'id', '=', $order_id )->first(['prepay','invoice_id','interest']);
+        $order_data = Order::where( 'id', '=', $order_id )->first(['prepay','invoice_id','interest','price']);
         $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
         $price = DB::table('invoices')->where( 'id', '=', $order_data->invoice_id )->first(['price']);
         $data = [];
@@ -103,7 +103,7 @@ class OrderController extends Controller
                     ->first(['interest','interest_period']);
         
         
-        if( $interest === null )
+               if( $interest === null )
             return response()->json( "Failed To Get Interest", 400 );
         
         foreach( $products as $product ):
