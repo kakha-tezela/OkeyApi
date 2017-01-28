@@ -19,27 +19,31 @@ class RegistrationMiddleware
          
         $validator = Validator::make( $request->all(),[
             
-                'firstname'         => 'bail|required|alpha',
-                'lastname'          => 'bail|required|alpha',
-                'email'             => 'bail|required|email|unique:users,email',
-                'phone'             => 'bail|required|unique:users,phone|digits_between:9,9|regex:/^5/',
-                'gender'            => 'bail|required|digits_between:1,1',
-                'birth_date'        => 'bail|required|date_format:"d/m/Y"',   
-                'address'           => 'required',
-                'city_id'           => 'bail|required|digits_between:1,4',
-                'pid'               => 'bail|unique:users,personal_id|digits_between:11,11',
-                'username'          => 'bail|required|unique:users,username',
-                'password'          => 'bail|required',
-                'social_id'         => 'bail|required|digits_between:1,1',
-                'work_place'        => 'bail|required',
-                'salary_id'         => 'bail|required|digits_between:1,1',
-                'transaction_id'    => 'bail|required',
-                'service_id'        => 'bail|required',
-                'merchant_id'       => 'bail|required',
-                'months'            => 'bail|required|numeric',
-                'prepay'            => 'bail|required|numeric',
-                'first_pay_date'    => 'bail|required|date_format:"d/m/Y"',
-                'end_date'          => 'bail|required|date_format:"d/m/Y"',
+                'firstname'             => 'bail|required|alpha',
+                'lastname'              => 'bail|required|alpha',
+                'email'                 => 'bail|required|email|unique:users,email',
+                'phone'                 => 'bail|required|unique:users,phone|digits_between:9,9|regex:/^5/',
+                'gender'                => 'bail|required|digits_between:1,1',
+                'birth_date'            => 'bail|required|date_format:"d/m/Y"',   
+                'address'               => 'required',
+                'city_id'               => 'bail|required|digits_between:1,4',
+                'pid'                   => 'bail|unique:users,personal_id|digits_between:11,11',
+                'username'              => 'bail|required|unique:users,username',
+                'password'              => 'bail|required',
+                'social_id'             => 'bail|required|digits_between:1,1',
+                'work_place'            => 'bail|required',
+                'salary_id'             => 'bail|required|digits_between:1,1',
+                'transaction_id'        => 'bail|required',
+                'service_id'            => 'bail|required',
+                'merchant_id'           => 'bail|required',
+                'months'                => 'bail|required|numeric',
+                'prepay'                => 'bail|required|numeric',
+                'first_pay_date'        => 'bail|required|date_format:"d/m/Y"',
+                'end_date'              => 'bail|required|date_format:"d/m/Y"',
+                'firstname_contact'     => 'bail|required|alpha',
+                'lastname_contact'      => 'bail|required|alpha',
+                'phone_contact'         => 'bail|required|digits_between:9,9|regex:/^5/',
+                'status'                => 'bail|required|alpha',
         ]);
 
         
@@ -51,8 +55,94 @@ class RegistrationMiddleware
             
             $failed = $validator->failed();
             
-            
             //Detect which rule caused fail
+            
+            if( isset( $failed['status'] ) ):
+                
+                if( isset( $failed['status']['Required'] ) )
+                {
+                   return response()->json( "Status of Contact person Missing", 400 );
+                }
+                elseif( isset( $failed['status']['Alpha'] ) )
+                {
+                   return response()->json( "Status of Contact person Not Alphabetical", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['phone_contact'] ) ):
+                
+                if( isset( $failed['phone_contact']['Required'] ) )
+                {
+                   return response()->json( "Phone of Contact Person Missing", 400 );
+                }
+                elseif( isset( $failed['phone_contact']['DigitsBetween'] ) )
+                {
+                   return response()->json( "Phone of Contact Person Invalid", 400 );
+                }
+                elseif( isset( $failed['phone_contact']['Regex'] ) )
+                {
+                   return response()->json( "Phone of Contact Person Invalid", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+             if( isset( $failed['lastname_contact'] ) ):
+                
+                if( isset( $failed['lastname_contact']['Required'] ) )
+                {
+                   return response()->json( "Lastname of Contact person Missing", 400 );
+                }
+                elseif( isset( $failed['lastname_contact']['Alpha'] ) )
+                {
+                   return response()->json( "Lastname of Contact person Not Alphabetical", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+             if( isset( $failed['firstname_contact'] ) ):
+                
+                if( isset( $failed['firstname_contact']['Required'] ) )
+                {
+                   return response()->json( "Firstname of Contact person Missing", 400 );
+                }
+                elseif( isset( $failed['firstname_contact']['Alpha'] ) )
+                {
+                   return response()->json( "Firstname of Contact person Not Alphabetical", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            
             
             if( isset( $failed['end_date'] ) ):
 

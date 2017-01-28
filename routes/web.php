@@ -16,8 +16,7 @@
 Route::post('/checkuser', 'UserController@checkUser');
 
 // User Registration
-Route::post('/register', 'UserController@register');
-//        ->middleware('registration');
+Route::post('/register', 'UserController@register')->middleware('registration');
 
 // User Authorization
 Route::post('/login', 'UserController@login');

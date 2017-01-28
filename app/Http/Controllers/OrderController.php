@@ -65,7 +65,8 @@ class OrderController extends Controller
         if( $order->save() ):
             
             $this->orderedProductsSeeder( $order->id );
-            return $this->orderShippingSeeder( $order->id, $request );
+            $this->orderShippingSeeder( $order->id, $request );
+            return $this->contactPeopleSeeder( $user_id, $order->id, $request );
             
         endif;
         
@@ -148,6 +149,37 @@ class OrderController extends Controller
             return response()->json("Seeding order_shippings Failed ! ", 400 );
         
     }
+    
+    
+    
+    
+    
+    
+    
+     
+    
+    public function contactPeopleSeeder( $user_id, $order_id, $request )
+    {
+        $data = [
+            
+            'user_id'    => $user_id,
+            'order_id'   => $order_id,
+            'firstname'  => $request['firstname_contact'],
+            'lastname'   => $request['lastname_contact'],
+            'phone'      => $request['phone_contact'],
+            'status'     => $request['status'],
+        ];
+        
+        $added = DB::table('contact_people')->insert( $data );
+        
+        if( !$added )
+            return response()->json("Seeding Contact People Failed ! ", 400 );
+        
+    }
+    
+    
+    
+    
     
     
     
