@@ -97,9 +97,18 @@ class OrderController extends Controller
         $price = DB::table('invoices')->where( 'id', '=', $order_data->invoice_id )->first(['price']);
         $data = [];
         
+        $interest = DB::table('merchant_services')->where( 'service_id', '=', $order_data->service_id )
+                    ->where( 'min_price', '<=', $order_data->price )
+                    ->where( 'max_price', '>=', $order_data->price )
+                    ->first(['interest','interest_period']);
+        
+        
+        if( $interest === null )
+            return response()->json( "Failed To Get Interest", 400 );
         
         foreach( $products as $product ):
-        
+            $products_price = $product->price * $product->quantity;
+            $interest_rate = $order_data->interest/100+1;
             $row = [
 
                 'order_id'      => $order_id,
@@ -107,10 +116,10 @@ class OrderController extends Controller
                 'category_id'   => $product->category_id,
                 'price'         => $product->price,
                 'quantity'      => $product->quantity,
-                'sum_price'     => $product->price * $product->quantity, // quantity * price
-                'prepay'        => ( $price->price / $order_data->prepay ) * ( $product->price * $product->quantity ),
-                'interest'      => $order_data->interest,
-                'total_price'   => 5000,// to be completed
+                'sum_price'     => $products_price, // quantity * price
+                'prepay'        => ( $price->price / $order_data->prepay ) * $products_price,
+                'interest'      => $products_price*$interest_rate,
+                'total_price'   => $this->totalAmount( $products_price, $interest->interest, $order_data->months, $interest->interest_period ),// to be completed
             ];
         
             $data[] = $row;
