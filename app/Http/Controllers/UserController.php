@@ -68,13 +68,15 @@ class UserController extends Controller
         
         $user = User::where( 'personal_id', '=', $request->pid )
                     ->where( 'password', '=', $request->password )
-                    ->first([ 'firstname','lastname','email','personal_id' ]);
+                    ->first();
         
         
         if( $user === null )
             return response()->json("User Not Found",404);
         
-        return response()->json( $this->setToken( $user ), 200 );
+        $result = $this->setToken( $user );
+        
+        return response()->json( $result, 200 );
         
     }
     
@@ -139,10 +141,12 @@ class UserController extends Controller
     
     // Check Token
     public function getAuthenticatedUser(){
+        
+        
         try
         {
            if ( !$result = JWTAuth::parseToken()->authenticate() )
-                            $result = 'user_not_found';
+                $result = 'user_not_found';
         }
         catch ( TokenExpiredException $e ){
             $result = 'token_expired';
@@ -165,8 +169,7 @@ class UserController extends Controller
      // set token
     public function setToken( $user )
     {
-        $token = JWTAuth::fromUser( $user );
-        return $token;
+        return JWTAuth::fromUser( $user );
     }
     
     
