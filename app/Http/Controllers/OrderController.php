@@ -67,6 +67,7 @@ class OrderController extends Controller
             
         
         $this->orderedProductsSeeder( $order->id );
+        $this->userOrderHistory( $order->id, $request );
         $this->orderShippingSeeder( $order->id, $request );
         $this->contactPeopleSeeder( $user_id, $order->id, $request );
 
@@ -117,7 +118,7 @@ class OrderController extends Controller
         
         $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
         $data = [];
-        
+
         foreach( $products as $product ):
         
             $products_price = $product->price * $product->quantity;
@@ -204,7 +205,33 @@ class OrderController extends Controller
     
     
     
-    
+    public function userOrderHistory( $order_id, $request )
+    {
+        $data = [
+            
+            'order_id'      => $order_id,        
+            'firstname'     => $request['firstname'],    
+            'lastname'      => $request['lastname'],
+            'gender'        => $request['gender'],
+            'birth_date'    => Carbon::parse( $request['birth_date'] )->format('Y-m-d'),
+            'address'       => $request['address'],
+            'city_id'       => $request['city_id'],          
+            'phone'         => $request['phone'],
+            'personal_id'   => $request['pid'],
+            'email'         => $request['email'],
+            'company_id'    => 0,
+            'social_id'     => $request['social_id'],
+            'work_place'    => $request['work_place'],
+            'bank_income'   => $request['bank_income'],
+            'other_income'  => $request['other_income'],
+            
+        ];
+        
+        $added = DB::table('users_order_history')->insert( $data );
+        
+        if( !$added )
+            return response()->json( "Failed To Seed user Order History Table", 400 );
+    }
     
     
     

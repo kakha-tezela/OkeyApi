@@ -44,6 +44,8 @@ class RegistrationMiddleware
                 'lastname_contact'      => 'bail|required|alpha',
                 'phone_contact'         => 'bail|required|digits_between:9,9|regex:/^5/',
                 'status'                => 'bail|required|alpha',
+                'bank_income'           => 'bail|required|numeric',
+                'other_income'          => 'bail|required|numeric',
         ]);
 
         
@@ -56,6 +58,47 @@ class RegistrationMiddleware
             $failed = $validator->failed();
             
             //Detect which rule caused fail
+            
+            
+            
+            //Detect which rule caused fail
+            
+            if( isset( $failed['bank_income'] ) ):
+                
+                if( isset( $failed['bank_income']['Required'] ) )
+                {
+                   return response()->json( "Bank Income Missing", 400 );
+                }
+                elseif( isset( $failed['bank_income']['Numeric'] ) )
+                {
+                   return response()->json( "Bank Income Not Numeric", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            if( isset( $failed['other_income'] ) ):
+                
+                if( isset( $failed['other_income']['Required'] ) )
+                {
+                   return response()->json( "Other Income Missing", 400 );
+                }
+                elseif( isset( $failed['other_income']['Numeric'] ) )
+                {
+                   return response()->json( "Other Income Not Numeric", 400 );
+                }
+
+            endif;           
+            
+            
+            
+            
+            
+            
+            
             
             if( isset( $failed['status'] ) ):
                 
