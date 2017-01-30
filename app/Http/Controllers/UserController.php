@@ -165,7 +165,6 @@ class UserController extends Controller
      // set token
     public function setToken( $user )
     {
-        // Create Token for That User
         $token = JWTAuth::fromUser( $user );
         return $token;
     }
