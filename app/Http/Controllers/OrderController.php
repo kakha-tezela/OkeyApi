@@ -62,13 +62,15 @@ class OrderController extends Controller
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
         
-        if( $order->save() ):
+        if( !$order->save() )
+            return response()->json( "Failed to Add Order !", 400 );
             
-            $this->orderedProductsSeeder( $order->id );
-            $this->orderShippingSeeder( $order->id, $request );
-            return $this->contactPeopleSeeder( $user_id, $order->id, $request );
-            
-        endif;
+        
+        $this->orderedProductsSeeder( $order->id );
+        $this->orderShippingSeeder( $order->id, $request );
+        $this->contactPeopleSeeder( $user_id, $order->id, $request );
+
+        return response()->json( "Operation Succesfull !", 200 ); 
         
     }
     
@@ -93,20 +95,31 @@ class OrderController extends Controller
     public function orderedProductsSeeder( $order_id )
     {
         $order_data = Order::where( 'id', '=', $order_id )->first(['prepay','invoice_id','interest','price']);
-        $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
+        
+        if( $order_data === null )
+            return response()->json( "Failed To Get Order Data", 400 );
+            
         $price = DB::table('invoices')->where( 'id', '=', $order_data->invoice_id )->first(['price']);
-        $data = [];
+        
+        if( $price === null )
+            return response()->json( "Failed To Get invoice Price", 400 );
+        
+        
         
         $interest = DB::table('merchant_services')->where( 'service_id', '=', $order_data->service_id )
                     ->where( 'min_price', '<=', $order_data->price )
                     ->where( 'max_price', '>=', $order_data->price )
                     ->first(['interest','interest_period']);
         
-        
-               if( $interest === null )
+        if( $interest === null )
             return response()->json( "Failed To Get Interest", 400 );
         
+        
+        $products = DB::table('invoice_products')->where( 'invoice_id', '=', $order_data->invoice_id )->get();
+        $data = [];
+        
         foreach( $products as $product ):
+        
             $products_price = $product->price * $product->quantity;
             $prepay = ( $price->price / $order_data->prepay ) * $products_price;
             $product_last_price = $products_price-$prepay;
