@@ -40,14 +40,14 @@ class UserController extends Controller
         $user->balance = 0;
         $user->status = 1;
         
-        if( $user->save() )
-            $user_id = $user->id;
+        if( !$user->save() )
+            return response()->json("Failed To Seed Users Table", 400 );
         
         
         
         //Seed orders Table
         $order = new OrderController();
-        return $order->addOrder( $user_id, $request->all() );
+        return $order->addOrder( $user->id, $request->all() );
         
     }
     
@@ -141,7 +141,6 @@ class UserController extends Controller
     
     // Check Token
     public function getAuthenticatedUser(){
-        
         
         try
         {
