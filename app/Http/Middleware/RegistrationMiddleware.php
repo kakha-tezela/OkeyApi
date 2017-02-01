@@ -25,17 +25,22 @@ class RegistrationMiddleware
                 'phone'                 => 'bail|required|unique:users,phone|digits_between:9,9|regex:/^5/',
                 'gender'                => 'bail|required|digits_between:1,1',
                 'birth_date'            => 'bail|required|date_format:"d/m/Y"',   
+                'citizenship'           => 'bail|required|numeric',   
                 'address'               => 'required',
                 'city_id'               => 'bail|required|digits_between:1,4',
+                'pid_number'            => 'bail|required',
                 'pid'                   => 'bail|unique:users,personal_id|digits_between:11,11',
                 'username'              => 'bail|required|unique:users,username',
                 'password'              => 'bail|required',
                 'social_id'             => 'bail|required|digits_between:1,1',
+                'reg_address'           => 'bail|required',
+                'phys_address'          => 'bail|required',
                 'work_place'            => 'bail|required',
                 'salary_id'             => 'bail|required|digits_between:1,1',
                 'transaction_id'        => 'bail|required',
                 'service_id'            => 'bail|required',
                 'merchant_id'           => 'bail|required',
+                'politic_person'        => 'bail|required|numeric',
                 'months'                => 'bail|required|numeric',
                 'prepay'                => 'bail|required|numeric',
                 'first_pay_date'        => 'bail|required|date_format:"d/m/Y"',
@@ -46,6 +51,10 @@ class RegistrationMiddleware
                 'status'                => 'bail|required|alpha',
                 'bank_income'           => 'bail|required|numeric',
                 'other_income'          => 'bail|required|numeric',
+                'sp'                    => 'bail|required|boolean',
+                'reg_number'            => 'numeric',
+                'reg_date'              => 'bail|date_format:"d/m/Y"',
+                'reg_org'               => 'alpha',
         ]);
 
         
@@ -57,11 +66,152 @@ class RegistrationMiddleware
             
             $failed = $validator->failed();
             
-            //Detect which rule caused fail
-            
-            
             
             //Detect which rule caused fail
+            if( isset( $failed['sp'] ) ):
+
+
+                if( isset( $failed['sp']['Required'] ) )
+                {
+                   return response()->json( "SP Field Missing", 400 );
+                }
+                elseif( isset( $failed['sp']['Boolean'] ) )
+                {
+                   return response()->json( "SP Field Incorrect Format", 400 );
+                }
+                else
+                {
+                    if( $request->sp == true ):
+                        
+                        if( !$request->has( 'reg_number' ) OR !$request->has( 'reg_date' ) OR !$request->has( 'reg_org' ) )
+                            return response()->json(" SP Information Missing ", 400 );
+                    
+                    endif;
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            if( isset( $failed['reg_org'] ) ):
+                
+                if( isset( $failed['reg_org']['Alpha'] ) )
+                   return response()->json( "Registration Organization Incorrect Format", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['reg_date'] ) ):
+                
+                if( isset( $failed['reg_date']['Numeric'] ) )
+                   return response()->json( "Registration DateFormat Incorrect", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            
+             if( isset( $failed['reg_number'] ) ):
+                
+                if( isset( $failed['reg_number']['Numeric'] ) )
+                {
+                   return response()->json( "Registration Number Incorrect Format", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['politic_person'] ) ):
+                
+                if( isset( $failed['politic_person']['Required'] ) )
+                {
+                   return response()->json( "Politic Person Status Missing", 400 );
+                }
+                elseif( isset( $failed['politic_person']['Numeric'] ) )
+                {
+                   return response()->json( "Politic Person Status Incorrect Format", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['phys_address'] ) ):
+                
+                if( isset( $failed['phys_address']['Required'] ) )
+                   return response()->json( "Physical Address Missing", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['reg_address'] ) ):
+                
+                if( isset( $failed['reg_address']['Required'] ) )
+                   return response()->json( "Registration Address Missing", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            if( isset( $failed['pid_number'] ) ):
+                
+                if( isset( $failed['pid_number']['Required'] ) )
+                {
+                   return response()->json( "Pid Number Missing", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            if( isset( $failed['citizenship'] ) ):
+                
+                if( isset( $failed['citizenship']['Required'] ) )
+                {
+                   return response()->json( "Citizenship Missing", 400 );
+                }
+                elseif( isset( $failed['citizenship']['Numeric'] ) )
+                {
+                   return response()->json( "Citizenship Incorrect Format", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
             
             if( isset( $failed['bank_income'] ) ):
                 

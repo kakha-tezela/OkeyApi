@@ -5,13 +5,14 @@ use App\User;
 use Carbon\Carbon;
 use Lcobucci\JWT\Configuration;
 use JWTAuth;
+use App\Repositories\Maradit;
 use JWTFactory;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use App\Http\Controllers\OrderController;
-
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -20,38 +21,62 @@ class UserController extends Controller
     public function register( Request $request )
     {
         
-        
         $user = new User;
+        $user->person_status = $request->sp == true ? "I" : "P";
         $user->firstname = $request->firstname;
         $user->lastname = $request->lastname;
         $user->gender = $request->gender;
         $user->birth_date = Carbon::parse( $request->birth_date )->format('Y-m-d');
-        $user->address = $request->address;
+        $user->citizenship = $request->citizenship;
+        $user->reg_address = $request->reg_address;
+        $user->phys_address = $request->phys_address;
         $user->city_id = $request->city_id;
         $user->phone = $request->phone;
+        $user->pid_number = $request->pid_number;
         $user->personal_id = $request->pid;
         $user->email = $request->email;
         $user->username = $request->username;
         $user->password = $request->password;
         $user->company_id = 0;
         $user->social_id = $request->social_id;
+        $user->politic_person = $request->politic_person;
         $user->work_place = $request->work_place;
         $user->salary_id = $request->salary_id;
         $user->balance = 0;
         $user->status = 1;
         
+        
         if( !$user->save() )
             return response()->json("Failed To Seed Users Table", 400 );
         
         
+        //Seed sp_users
+        if( $request->sp == true )
+                $this->spUsersSeeder( $user->id, $request->reg_number, $request->reg_date, $request->reg_org );
         
+        return;
         //Seed orders Table
         $order = new OrderController();
         return $order->addOrder( $user->id, $request->all() );
-        
     }
     
     
+    
+    
+    
+    public function spUsersSeeder( $user_id, $reg_number, $reg_date, $reg_org  )
+    {
+        $data = [
+            
+            'user_id'     => $user_id,
+            'reg_number'  => $reg_number,
+            'reg_date'    => Carbon::parse( $reg_date )->format("Y-m-d"),   
+            'reg_org'     => $reg_org   
+        
+        ];
+        
+        return DB::table('sp_users')->insert( $data );
+    }
     
     
 
@@ -163,14 +188,11 @@ class UserController extends Controller
     
     
     
-    
-    
      // set token
     public function setToken( $user )
     {
         return JWTAuth::fromUser( $user );
     }
-    
     
     
 }

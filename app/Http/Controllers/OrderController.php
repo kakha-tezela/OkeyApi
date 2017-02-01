@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Http\Controllers;
 use App\Order;
 use Carbon\Carbon;
+use App\Repositories\Maradit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -42,8 +42,6 @@ class OrderController extends Controller
             return response()->json( "Failed To Get Interest", 400 );
         
         
-        
-        
         // Seed Orders Table
         $order = new Order;
         $order->user_id = $user_id;
@@ -61,6 +59,9 @@ class OrderController extends Controller
         $order->interest = $interest->interest;
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
+        $order->sms_code = "";
+        $order->verified = 0;
+        
         
         if( !$order->save() )
             return response()->json( "Failed to Add Order !", 400 );
@@ -70,10 +71,13 @@ class OrderController extends Controller
         $this->userOrderHistory( $order->id, $request );
         $this->orderShippingSeeder( $order->id, $request );
         $this->contactPeopleSeeder( $user_id, $order->id, $request );
-
+        
+        
         return response()->json( "Operation Succesfull !", 200 ); 
         
     }
+    
+    
     
     
     
@@ -88,6 +92,8 @@ class OrderController extends Controller
         elseif ( $period == "Y" )
             return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 + 1 );
     }
+    
+    
     
     
     
@@ -233,6 +239,28 @@ class OrderController extends Controller
             return response()->json( "Failed To Seed user Order History Table", 400 );
     }
     
+    
+    
+    
+    
+    
+    
+    //Send sms
+    public function smssend( $phone, $message ){
+
+        $maradit = new Maradit("hippo", "654555");
+        $to_list = [$phone];
+        $from = 'Hippo';
+        $data_coding = 'Default';
+        $response = $maradit->submit($to_list, $message, $from, null, null, $data_coding);
+
+
+        if( $response->status )
+            return $response->payload->MessageId;
+        else
+            return "Client error:".$response->error;
+
+    }
     
     
     
