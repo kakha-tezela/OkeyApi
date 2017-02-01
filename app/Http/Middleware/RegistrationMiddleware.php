@@ -68,6 +68,7 @@ class RegistrationMiddleware
             
             
             //Detect which rule caused fail
+            
             if( isset( $failed['sp'] ) ):
 
 
@@ -78,15 +79,6 @@ class RegistrationMiddleware
                 elseif( isset( $failed['sp']['Boolean'] ) )
                 {
                    return response()->json( "SP Field Incorrect Format", 400 );
-                }
-                else
-                {
-                    if( $request->sp == true ):
-                        
-                        if( !$request->has( 'reg_number' ) OR !$request->has( 'reg_date' ) OR !$request->has( 'reg_org' ) )
-                            return response()->json(" SP Information Missing ", 400 );
-                    
-                    endif;
                 }
 
             endif;
