@@ -20,7 +20,7 @@ class UserController extends Controller
     
     public function register( Request $request )
     {
-        
+       
         $user = new User;
         $user->person_status = $request->sp == true ? "I" : "P";
         $user->firstname = $request->firstname;
@@ -50,22 +50,23 @@ class UserController extends Controller
             return response()->json("Failed To Seed Users Table", 400 );
         
         
-        //Seed sp_users
+        //Seed sp_users table
         if( $request->sp == true ):
             
             if( !$request->has( 'reg_number' ) OR !$request->has( 'reg_date' ) OR !$request->has( 'reg_org' ) )
                             return response()->json(" SP Information Missing ", 400 );
             
-        $this->spUsersSeeder( $user->id, $request->reg_number, $request->reg_date, $request->reg_org );
+            $this->spUsersSeeder( $user->id, $request->reg_number, $request->reg_date, $request->reg_org );
         
         endif;
         
         
-        return;
         //Seed orders Table
         $order = new OrderController();
         return $order->addOrder( $user->id, $request->all() );
     }
+    
+    
     
     
     

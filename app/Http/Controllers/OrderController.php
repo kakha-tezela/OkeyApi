@@ -45,22 +45,30 @@ class OrderController extends Controller
         // Seed Orders Table
         $order = new Order;
         $order->user_id = $user_id;
-        $order->admin_id = 1; // to be completed
         $order->company_id = $user_data->company_id;
         $order->invoice_id = $invoice_id->invoice_id; 
         $order->shipping_price = $invoice_data->shipping_price;
         $order->service_id = $request['service_id'];
+        $order->channel_id = $request['channel_id'];
+        $order->branch_id = $request['branch_id'];
         $order->merchant_id = $request['merchant_id'];
         $order->months = $request['months'];
-        $order->price = $invoice_data->price; 
         $order->prepay = $request['prepay'];
-        $order->status = 0;
-        $order->total_amount = $this->totalAmount( $invoice_data->sum_price, $interest->interest, $request['months'], $interest->interest_period );
+        $order->currency_id = $request['currency_id'];
+        $order->principal_price = $invoice_data->sum_price;  
         $order->interest = $interest->interest;
+        $order->interest_price = $this->interestPrice( $invoice_data->sum_price, $interest->interest, $request['months'], $interest->interest_period );
+        $order->price = $invoice_data->price; 
+        $order->total_amount = $this->totalAmount( $invoice_data->sum_price, $interest->interest, $request['months'], $interest->interest_period );
+        $order->start_date = Carbon::parse( $request['start_date'])->format('Y-m-d');  
         $order->first_pay_date = Carbon::parse( $request['first_pay_date'] )->format('Y-m-d');
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
+        $order->repetition = $this->countOrders( $user_id );
+        $order->guarantee = $request['guarantee'];
+        $order->portfel_manager = 0; // new later assigned
         $order->sms_code = "";
         $order->verified = 0;
+        $order->status = 0;
         
         
         if( !$order->save() )
@@ -79,6 +87,27 @@ class OrderController extends Controller
     
     
     
+    
+    
+    
+    
+    
+    public function countOrders( $user_id )
+    {
+        return DB::table('orders')->where( 'user_id', '=', $user_id )->count() + 1;
+    }
+    
+    
+    
+    
+    
+    public function interestPrice( $sum_price, $interest, $month, $period )
+    {
+        if( $period == "M" )
+            return $sum_price * ( ( $interest * $month ) / 100 );
+        elseif ( $period == "Y" )
+            return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 );
+    }
     
     
     

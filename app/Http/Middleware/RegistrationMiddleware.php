@@ -24,7 +24,7 @@ class RegistrationMiddleware
                 'email'                 => 'bail|required|email|unique:users,email',
                 'phone'                 => 'bail|required|unique:users,phone|digits_between:9,9|regex:/^5/',
                 'gender'                => 'bail|required|digits_between:1,1',
-                'birth_date'            => 'bail|required|date_format:"d/m/Y"',   
+                'birth_date'            => 'bail|required|date',   
                 'citizenship'           => 'bail|required|numeric',   
                 'address'               => 'required',
                 'city_id'               => 'bail|required|digits_between:1,4',
@@ -39,12 +39,17 @@ class RegistrationMiddleware
                 'salary_id'             => 'bail|required|digits_between:1,1',
                 'transaction_id'        => 'bail|required',
                 'service_id'            => 'bail|required',
+                'channel_id'            => 'bail|required',
+                'branch_id'             => 'bail|required',
+                'currency_id'           => 'bail|required',
                 'merchant_id'           => 'bail|required',
+                'guarantee'             => 'bail|required',
                 'politic_person'        => 'bail|required|numeric',
                 'months'                => 'bail|required|numeric',
                 'prepay'                => 'bail|required|numeric',
-                'first_pay_date'        => 'bail|required|date_format:"d/m/Y"',
-                'end_date'              => 'bail|required|date_format:"d/m/Y"',
+                'start_date'            => 'bail|required|date',
+                'first_pay_date'        => 'bail|required|date',
+                'end_date'              => 'bail|required|date',
                 'firstname_contact'     => 'bail|required|alpha',
                 'lastname_contact'      => 'bail|required|alpha',
                 'phone_contact'         => 'bail|required|digits_between:9,9|regex:/^5/',
@@ -53,14 +58,12 @@ class RegistrationMiddleware
                 'other_income'          => 'bail|required|numeric',
                 'sp'                    => 'bail|required|boolean',
                 'reg_number'            => 'numeric',
-                'reg_date'              => 'bail|date_format:"d/m/Y"',
+                'reg_date'              => 'bail|date',
                 'reg_org'               => 'alpha',
         ]);
 
         
         
-        
-         
         if( $validator->fails() )
         {
             
@@ -68,6 +71,70 @@ class RegistrationMiddleware
             
             
             //Detect which rule caused fail
+            
+            if( isset( $failed['start_date'] ) ):
+
+                if( isset( $failed['start_date']['Required'] ) )
+                {
+                   return response()->json( "Start Date is Missing", 400 );
+                }
+                elseif( $failed['start_date']['Date'] )
+                {
+                    return response()->json( "Start Date Format Incorrect", 400 );
+                }
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['guarantee'] ) ):
+                
+                if( isset( $failed['guarantee']['Required'] ) )
+                   return response()->json( "Guarantee Information Missing", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            if( isset( $failed['currency_id'] ) ):
+                
+                if( isset( $failed['currency_id']['Required'] ) )
+                   return response()->json( "Currency Information Missing", 400 );
+
+            endif;
+
+
+
+
+            if( isset( $failed['branch_id'] ) ):
+                
+                if( isset( $failed['branch_id']['Required'] ) )
+                   return response()->json( "Branch Information Missing", 400 );
+
+            endif;
+            
+            
+            
+            
+            
+            
+            
+            if( isset( $failed['channel_id'] ) ):
+                
+                if( isset( $failed['channel_id']['Required'] ) )
+                   return response()->json( "Channel Information Missing", 400 );
+
+            endif;
+            
+            
+            
+            
             
             if( isset( $failed['sp'] ) ):
 
@@ -101,7 +168,7 @@ class RegistrationMiddleware
             
             if( isset( $failed['reg_date'] ) ):
                 
-                if( isset( $failed['reg_date']['Numeric'] ) )
+                if( isset( $failed['reg_date']['Date'] ) )
                    return response()->json( "Registration DateFormat Incorrect", 400 );
 
             endif;
@@ -335,7 +402,7 @@ class RegistrationMiddleware
                 {
                    return response()->json( "End Pay Date is Missing", 400 );
                 }
-                elseif( $failed['end_date']['DateFormat'] )
+                elseif( $failed['end_date']['Date'] )
                 {
                     return response()->json( "End Pay Date Format Incorrect", 400 );
                 }
@@ -356,7 +423,7 @@ class RegistrationMiddleware
                 {
                    return response()->json( "First Pay Date is Missing", 400 );
                 }
-                elseif( $failed['first_pay_date']['DateFormat'] )
+                elseif( $failed['first_pay_date']['Date'] )
                 {
                     return response()->json( "First Pay Date Format Incorrect", 400 );
                 }
@@ -465,12 +532,14 @@ class RegistrationMiddleware
                 {
                    return response()->json( "Birth Date is Missing", 400 );
                 }
-                elseif( isset( $failed['birth_date']['DateFormat'] ) )
+                elseif( isset( $failed['birth_date']['Date'] ) )
                 {
                    return response()->json( "Birth Date format is incorrect", 400 );
                 }
 
             endif;
+            
+            
             
             
             
