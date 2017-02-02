@@ -12,6 +12,12 @@
 */
 
 
+// Create Schedule For User
+Route::post('/order/success', 'OrderController@createSchedule');
+
+
+
+
 // Get invoice Information
 Route::post('/invoice', 'InvoiceController@getInvoiceInfo');
 

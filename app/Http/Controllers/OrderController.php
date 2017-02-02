@@ -8,7 +8,95 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-   
+    
+    
+    
+    
+    public function createSchedule( Request $request )
+    {
+        // Get Order Data
+        $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','first_pay_date','total_amount','months','principal_price','interest_price']);
+        
+        if( $orderData === null )
+            return response()->json( "Failed To Get Order Data", 400 );
+        
+        
+        
+        for( $i = 0; $i <= $orderData->months; $i++ ):
+            
+            
+            if( $i == 0 )
+            {
+                $pay_date = $orderData->first_pay_date;
+                
+                $data[] = [
+                  'order_id'        => $request->order_id,
+                  'month'           => $i,  
+                  'month_amount'    => 0,  
+                  'interest'        => 0,  
+                  'principal'       => 0,
+                  'debt_left'       => $orderData->total_amount,
+                  'pay_date'        => $pay_date,
+                ];
+            }
+            elseif( $i == $orderData->months )
+            {   
+                
+                $month_amount = $orderData->total_amount - ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) ;
+                $principal = $orderData->principal_price - number_format( $orderData->principal_price / $orderData->months, 2 ) * ( $i - 1 );
+                $interest = $month_amount - $principal;
+                $debt_left = $orderData->total_amount - ( ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) + $month_amount );
+                $pay_date = $orderData->first_pay_date;
+               
+                
+                $data[] = [
+
+                    'order_id'        => $request->order_id,
+                    'month'           => $i,  
+                    'month_amount'    => $month_amount,  
+                    'interest'        => $interest,  
+                    'principal'       => $principal,
+                    'debt_left'       => $debt_left,
+                    'pay_date'        => $orderData->first_pay_date,
+                ];
+                
+                
+                
+            }
+            else
+            {
+                $month_amount = number_format( $orderData->total_amount / $orderData->months, 2 );
+                $principal = number_format( $orderData->principal_price / $orderData->months, 2 );
+                $interest = number_format( $month_amount - $principal, 2 );
+                $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
+                $pay_date = $orderData->first_pay_date; //to be completed
+                
+                
+                $data[] = [
+
+                    'order_id'        => $request->order_id,
+                    'month'           => $i,  
+                    'month_amount'    => $month_amount,  
+                    'interest'        => $interest,  
+                    'principal'       => $principal,
+                    'debt_left'       => $debt_left,
+                    'pay_date'        => $orderData->first_pay_date,
+                ];
+                
+            }
+
+        endfor;
+        
+        return $data;
+        
+    }
+    
+    
+    
+    
+    
+    
+    
     
     public function addOrder( $user_id, $request )
     {
