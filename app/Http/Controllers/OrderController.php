@@ -27,8 +27,6 @@ class OrderController extends Controller
             
             if( $i == 0 )
             {
-                $pay_date = $orderData->first_pay_date;
-                
                 $data[] = [
                   'order_id'        => $request->order_id,
                   'month'           => $i,  
@@ -36,7 +34,7 @@ class OrderController extends Controller
                   'interest'        => 0,  
                   'principal'       => 0,
                   'debt_left'       => $orderData->total_amount,
-                  'pay_date'        => $pay_date,
+                  'pay_date'        => Carbon::parse( $request['start_date'])->format('Y-m-d'),
                 ];
             }
             elseif( $i == $orderData->months )
@@ -57,7 +55,7 @@ class OrderController extends Controller
                     'interest'        => $interest,  
                     'principal'       => $principal,
                     'debt_left'       => $debt_left,
-                    'pay_date'        => $orderData->first_pay_date,
+                    'pay_date'        => Carbon::create( $request['first_pay_date'] )->addMonths($i)->format('Y-m-d'),
                 ];
                 
                 
@@ -65,11 +63,12 @@ class OrderController extends Controller
             }
             else
             {
+                
                 $month_amount = number_format( $orderData->total_amount / $orderData->months, 2 );
                 $principal = number_format( $orderData->principal_price / $orderData->months, 2 );
                 $interest = number_format( $month_amount - $principal, 2 );
                 $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
-                $pay_date = $orderData->first_pay_date; //to be completed
+                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths($i)->format('Y-m-d');
                 
                 
                 $data[] = [
@@ -80,7 +79,7 @@ class OrderController extends Controller
                     'interest'        => $interest,  
                     'principal'       => $principal,
                     'debt_left'       => $debt_left,
-                    'pay_date'        => $orderData->first_pay_date,
+                    'pay_date'        => $pay_date,
                 ];
                 
             }
