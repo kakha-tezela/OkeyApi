@@ -31,7 +31,11 @@ class OrderController extends Controller
                 $interest = 0;
                 $principal = 0;
                 $debt_left = $orderData->total_amount;
-                $pay_date = Carbon::parse( $request['start_date'])->format('Y-m-d');
+                $pay_date = Carbon::parse( $orderData->first_pay_date )->format('Y-m-d');
+                
+                // Check Date
+                $pay_date = $this->checkPayDate( $pay_date );
+                
             }
             elseif( $i == $orderData->months )
             {   
@@ -39,7 +43,10 @@ class OrderController extends Controller
                 $principal = $orderData->principal_price - number_format( $orderData->principal_price / $orderData->months, 2 ) * ( $i - 1 );
                 $interest = $month_amount - $principal;
                 $debt_left = $orderData->total_amount - ( ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) + $month_amount );
-                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths( $i )->format('Y-m-d');
+                
+                // Check Date
+                $time = strtotime( $orderData->first_pay_date );
+                $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
                 
             }
             else
@@ -48,7 +55,11 @@ class OrderController extends Controller
                 $principal = number_format( $orderData->principal_price / $orderData->months, 2 );
                 $interest = number_format( $month_amount - $principal, 2 );
                 $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
-                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths( $i )->format('Y-m-d');
+
+                // Check Date
+                $time = strtotime( $orderData->first_pay_date );
+                $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
+                
             }
             
             
@@ -70,6 +81,35 @@ class OrderController extends Controller
     }
     
     
+    
+    
+    
+    
+    
+    
+   public function checkPayDate( $pay_date )
+    {
+        
+        // Check Date in Database
+        $pay_date = Carbon::parse( $pay_date )->format('d.m.Y');
+        $cnt = DB::table('dasveneba')->where( 'title', '=', $pay_date )->count();
+
+        
+        if( $cnt == 1 ):
+
+            while( $cnt != 0 ):
+            
+                $pay_date = strtotime("1 day", strtotime( $pay_date ));
+                $pay_date = date("Y-m-d", $pay_date);
+                $cnt = DB::table('dasveneba')->where( 'title', '=', $pay_date )->count();
+            
+            endwhile;
+            
+        endif;        
+        
+        return Carbon::parse( $pay_date )->format('Y-m-d');
+        
+    }
     
     
     
