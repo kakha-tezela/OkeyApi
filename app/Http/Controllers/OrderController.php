@@ -14,12 +14,12 @@ class OrderController extends Controller
     
     public function createSchedule( Request $request )
     {
+                
         // Get Order Data
         $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','first_pay_date','total_amount','months','principal_price','interest_price']);
         
         if( $orderData === null )
             return response()->json( "Failed To Get Order Data", 400 );
-        
         
         
         for( $i = 0; $i <= $orderData->months; $i++ ):
@@ -47,6 +47,7 @@ class OrderController extends Controller
                 // Check Date
                 $time = strtotime( $orderData->first_pay_date );
                 $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
+                $pay_date = $this->checkPayDate( $pay_date );
                 
             }
             else
@@ -59,6 +60,7 @@ class OrderController extends Controller
                 // Check Date
                 $time = strtotime( $orderData->first_pay_date );
                 $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
+                $pay_date = $this->checkPayDate( $pay_date );
                 
             }
             
@@ -90,22 +92,32 @@ class OrderController extends Controller
    public function checkPayDate( $pay_date )
     {
         
-        // Check Date in Database
+        // Check Date If Day Off
+       
         $pay_date = Carbon::parse( $pay_date )->format('d.m.Y');
         $cnt = DB::table('dasveneba')->where( 'title', '=', $pay_date )->count();
-
         
         if( $cnt == 1 ):
 
             while( $cnt != 0 ):
             
-                $pay_date = strtotime("1 day", strtotime( $pay_date ));
-                $pay_date = date("Y-m-d", $pay_date);
+                $pay_date = strtotime( "1 day", strtotime( $pay_date ) );
+                $pay_date = date( "Y-m-d", $pay_date );
                 $cnt = DB::table('dasveneba')->where( 'title', '=', $pay_date )->count();
             
             endwhile;
             
-        endif;        
+        endif;
+
+        
+        // Check Date If Sunday
+        $weekDay = date( 'w', strtotime( $pay_date ) );
+        
+        if( $weekDay == "0" ):
+               $pay_date = strtotime("1 day", strtotime( $pay_date ));
+               $pay_date = date( "Y-m-d", $pay_date );
+            
+        endif;
         
         return Carbon::parse( $pay_date )->format('Y-m-d');
         
