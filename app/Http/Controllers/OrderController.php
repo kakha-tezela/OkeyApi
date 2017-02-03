@@ -27,68 +27,50 @@ class OrderController extends Controller
             
             if( $i == 0 )
             {
-                $data[] = [
-                  'order_id'        => $request->order_id,
-                  'month'           => $i,  
-                  'month_amount'    => 0,  
-                  'interest'        => 0,  
-                  'principal'       => 0,
-                  'debt_left'       => $orderData->total_amount,
-                  'pay_date'        => Carbon::parse( $request['start_date'])->format('Y-m-d'),
-                ];
+                $month_amount = 0;
+                $interest = 0;
+                $principal = 0;
+                $debt_left = $orderData->total_amount;
+                $pay_date = Carbon::parse( $request['start_date'])->format('Y-m-d');
             }
             elseif( $i == $orderData->months )
             {   
-                
                 $month_amount = $orderData->total_amount - ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) ;
                 $principal = $orderData->principal_price - number_format( $orderData->principal_price / $orderData->months, 2 ) * ( $i - 1 );
                 $interest = $month_amount - $principal;
                 $debt_left = $orderData->total_amount - ( ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) + $month_amount );
-                $pay_date = $orderData->first_pay_date;
-               
-                
-                $data[] = [
-
-                    'order_id'        => $request->order_id,
-                    'month'           => $i,  
-                    'month_amount'    => $month_amount,  
-                    'interest'        => $interest,  
-                    'principal'       => $principal,
-                    'debt_left'       => $debt_left,
-                    'pay_date'        => Carbon::create( $request['first_pay_date'] )->addMonths($i)->format('Y-m-d'),
-                ];
-                
-                
+                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths( $i )->format('Y-m-d');
                 
             }
             else
             {
-                
                 $month_amount = number_format( $orderData->total_amount / $orderData->months, 2 );
                 $principal = number_format( $orderData->principal_price / $orderData->months, 2 );
                 $interest = number_format( $month_amount - $principal, 2 );
                 $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
-                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths($i)->format('Y-m-d');
-                
-                
-                $data[] = [
-
-                    'order_id'        => $request->order_id,
-                    'month'           => $i,  
-                    'month_amount'    => $month_amount,  
-                    'interest'        => $interest,  
-                    'principal'       => $principal,
-                    'debt_left'       => $debt_left,
-                    'pay_date'        => $pay_date,
-                ];
-                
+                $pay_date = Carbon::create( $request['first_pay_date'] )->addMonths( $i )->format('Y-m-d');
             }
+            
+            
+            $data[] = [
+
+                'order_id'        => $request->order_id,
+                'month'           => $i,  
+                'month_amount'    => $month_amount,  
+                'interest'        => $interest,  
+                'principal'       => $principal,
+                'debt_left'       => $debt_left,
+                'pay_date'        => $pay_date,
+            ];
 
         endfor;
         
         return $data;
         
     }
+    
+    
+    
     
     
     
@@ -179,10 +161,18 @@ class OrderController extends Controller
     
     
     
+    
+    
+    
+    
     public function countOrders( $user_id )
     {
         return DB::table('orders')->where( 'user_id', '=', $user_id )->count() + 1;
     }
+    
+    
+    
+    
     
     
     
@@ -201,6 +191,10 @@ class OrderController extends Controller
     
     
     
+    
+    
+    
+    
     public function totalAmount( $sum_price, $interest, $month, $period )
     {
         if( $period == "M" )
@@ -208,6 +202,8 @@ class OrderController extends Controller
         elseif ( $period == "Y" )
             return $sum_price * ( ( ( $interest / 12 ) * $month ) / 100 + 1 );
     }
+    
+    
     
     
     
@@ -354,6 +350,8 @@ class OrderController extends Controller
         if( !$added )
             return response()->json( "Failed To Seed user Order History Table", 400 );
     }
+    
+    
     
     
     
