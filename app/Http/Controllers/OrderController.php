@@ -34,7 +34,8 @@ class OrderController extends Controller
                 $interest = 0;
                 $principal = 0;
                 $debt_left = $orderData->total_amount;
-                $pay_date = Carbon::parse( $orderData->first_pay_date )->format('Y-m-d');
+                $pay_date = $orderData->start_date;                    
+
                 
                 // Check Date
                 $pay_date = $this->checkPayDate( $pay_date );
@@ -50,7 +51,7 @@ class OrderController extends Controller
                 
                 // Check Date
                 $time = strtotime( $orderData->first_pay_date );
-                $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
+                $pay_date = date( "Y-m-d", strtotime( "+".($i-1)."month", $time ) );
                 $pay_date = $this->checkPayDate( $pay_date );
                 
             }
@@ -60,22 +61,27 @@ class OrderController extends Controller
                 $principal = number_format( $orderData->principal_price / $orderData->months, 2 );
                 $interest = number_format( $month_amount - $principal, 2 );
                 $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
-
-                 if( $i == 1 ):
-                     
+                
+                $time = strtotime( $orderData->first_pay_date );
+                $pay_date = date( "Y-m-d", strtotime( "+".($i-1)."month", $time ) );
+                $pay_date = $this->checkPayDate( $pay_date );
+                
+                if( $i == 1 ):
+                    
                     $month_amount += $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $interest );
                     $interest += $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $interest );
-                 
+                    
+                    // Check Date
+                    $time = strtotime( $orderData->first_pay_date );
+                    $pay_date = date( "Y-m-d", $time );
+                    $pay_date = $this->checkPayDate( $pay_date );
+                
                 endif;
-                
-                
-                // Check Date
-                $time = strtotime( $orderData->first_pay_date );
-                $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
-                $pay_date = $this->checkPayDate( $pay_date );
                 
             }
             
+            
+            // Generate Aray
             
             $data[] = [
 
@@ -103,11 +109,11 @@ class OrderController extends Controller
     
     public function extraPay( $start_date, $first_pay_date, $month_interest )
     {
-        
         // Get Difference In Days
         $start_date = Carbon::parse( $start_date );
         $first_pay_date = Carbon::parse( $first_pay_date );
-        $diff_small = $first_pay_date->diffInDays( $start_date );
+        $prev_pay_date = $first_pay_date->subMonth(1);
+        $diff_small = $prev_pay_date->diffInDays( $start_date );
         
         
         // Increase First Pay Date By Month
@@ -209,6 +215,7 @@ class OrderController extends Controller
         
         
         // Seed Orders Table
+        
         $order = new Order;
         $order->user_id = $user_id;
         $order->company_id = $user_data->company_id;
@@ -231,12 +238,12 @@ class OrderController extends Controller
         $order->end_date = Carbon::parse( $request['end_date'] )->format('Y-m-d');
         $order->repetition = $this->countOrders( $user_id );
         $order->guarantee = $request['guarantee'];
-        $order->portfel_manager = 0; // new later assigned
+        $order->portfel_manager = 0; // later assigned
         $order->sms_code = "";
         $order->verified = 0;
         $order->status = 0;
         
-        
+         
         if( !$order->save() )
             return response()->json( "Failed to Add Order !", 400 );
             
