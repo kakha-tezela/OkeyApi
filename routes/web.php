@@ -13,7 +13,7 @@
 
 
 // Create Schedule For User
-Route::post('/test', 'OrderController@checkPayDate');
+Route::post('/orderstatus', 'OrderController@orderStatus');
 
 
 

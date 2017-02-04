@@ -10,6 +10,25 @@ class OrderController extends Controller
 {
     
     
+    public function orderStatus( Request $request )
+    {
+        if( !$request->has( 'order_id' ) OR !$request->has( 'personal_id' ) OR !$request->has( 'status' ) )
+            return response()->json( "Necessary Data Missing", 400 );
+
+        
+        Order::where( 'id', '=', $request->order_id )->update([
+            
+            'status'          => $request->status,
+            'portfel_manager' => $request->personal_id,
+        
+        ]);        
+        
+    }
+    
+    
+    
+    
+    
     
     
     public function createSchedule( Request $request )
@@ -17,8 +36,6 @@ class OrderController extends Controller
         
         // Get Order Data
         $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','start_date','first_pay_date','total_amount','months','principal_price','interest_price']);
-        
-//        return $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $orderData->interest_price );
         
         
         if( $orderData === null )
@@ -96,7 +113,13 @@ class OrderController extends Controller
 
         endfor;
         
-        return $data;
+        $added = DB::table('schedule')->insert( $data );
+        
+        if( !$added )
+            return response()->json( "Failed To Insert Schedule", 400 );
+        
+        
+        return response()->json("Operation Succesfull !", 200 );
         
     }
     
