@@ -14,9 +14,12 @@ class OrderController extends Controller
     
     public function createSchedule( Request $request )
     {
-                
+        
         // Get Order Data
-        $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','first_pay_date','total_amount','months','principal_price','interest_price']);
+        $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','start_date','first_pay_date','total_amount','months','principal_price','interest_price']);
+        
+        return $this->extraPay( $orderData->start_date, $orderData->first_pay_date, 402 );
+        
         
         if( $orderData === null )
             return response()->json( "Failed To Get Order Data", 400 );
@@ -89,6 +92,36 @@ class OrderController extends Controller
     
     
     
+    public function extraPay( $start_date, $first_pay_date, $month_amount )
+    {
+        // Get Difference In Days
+        
+        $start_date = Carbon::parse( $start_date );
+        $first_pay_date = Carbon::parse( $first_pay_date );
+        $diff = $first_pay_date->diffInDays( $start_date );
+        
+        // Increase First Pay Date By Month
+        $second_pay_date = Carbon::parse( $first_pay_date )->addMonths(1)->format( 'Y-m-d' );
+        
+        // Get Interval Between Start Date And Next Months Pay Date
+        $second_pay_date = Carbon::parse( $second_pay_date );
+        $diff2 = $second_pay_date->diffInDays( $start_date );
+        
+        
+        return number_format( $month_amount / $diff2 * $diff, 2 );
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
    public function checkPayDate( $pay_date )
     {
         
@@ -111,6 +144,7 @@ class OrderController extends Controller
 
         
         // Check Date If Sunday
+        
         $weekDay = date( 'w', strtotime( $pay_date ) );
         
         if( $weekDay == "0" ):
@@ -432,3 +466,17 @@ class OrderController extends Controller
     
     
 }
+
+
+
+
+
+
+
+
+
+
+
+//        $first_pay_date = strtotime( $first_pay_date );
+//        $second_pay_date = date( "Y-m-d", strtotime( "+1 month", $first_pay_date ) );
+//        $second_pay_date = Carbon::parse( $second_pay_date );
