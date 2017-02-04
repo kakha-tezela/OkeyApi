@@ -18,7 +18,7 @@ class OrderController extends Controller
         // Get Order Data
         $orderData = Order::where( 'id', '=', $request->only(['order_id']) )->first(['id','start_date','first_pay_date','total_amount','months','principal_price','interest_price']);
         
-        return $this->extraPay( $orderData->start_date, $orderData->first_pay_date, 402 );
+//        return $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $orderData->interest_price );
         
         
         if( $orderData === null )
@@ -41,7 +41,8 @@ class OrderController extends Controller
                 
             }
             elseif( $i == $orderData->months )
-            {   
+            {
+                
                 $month_amount = $orderData->total_amount - ( number_format( $orderData->total_amount / $orderData->months, 2 ) * ( $i - 1 ) ) ;
                 $principal = $orderData->principal_price - number_format( $orderData->principal_price / $orderData->months, 2 ) * ( $i - 1 );
                 $interest = $month_amount - $principal;
@@ -60,6 +61,14 @@ class OrderController extends Controller
                 $interest = number_format( $month_amount - $principal, 2 );
                 $debt_left = number_format( $orderData->total_amount - $month_amount * $i, 2 );
 
+                 if( $i == 1 ):
+                     
+                    $month_amount += $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $interest );
+                    $interest += $this->extraPay( $orderData->start_date, $orderData->first_pay_date, $interest );
+                 
+                endif;
+                
+                
                 // Check Date
                 $time = strtotime( $orderData->first_pay_date );
                 $pay_date = date( "Y-m-d", strtotime( "+".$i."month", $time ) );
@@ -92,23 +101,25 @@ class OrderController extends Controller
     
     
     
-    public function extraPay( $start_date, $first_pay_date, $month_amount )
+    public function extraPay( $start_date, $first_pay_date, $month_interest )
     {
-        // Get Difference In Days
         
+        // Get Difference In Days
         $start_date = Carbon::parse( $start_date );
         $first_pay_date = Carbon::parse( $first_pay_date );
-        $diff = $first_pay_date->diffInDays( $start_date );
+        $diff_small = $first_pay_date->diffInDays( $start_date );
+        
         
         // Increase First Pay Date By Month
         $second_pay_date = Carbon::parse( $first_pay_date )->addMonths(1)->format( 'Y-m-d' );
         
+        
         // Get Interval Between Start Date And Next Months Pay Date
         $second_pay_date = Carbon::parse( $second_pay_date );
-        $diff2 = $second_pay_date->diffInDays( $start_date );
+        $diff_big = $second_pay_date->diffInDays( $first_pay_date );
         
         
-        return number_format( $month_amount / $diff2 * $diff, 2 );
+        return number_format( $month_interest / $diff_big * $diff_small, 2 );
         
     }
     
@@ -406,6 +417,9 @@ class OrderController extends Controller
             return response()->json("Seeding Contact People Failed ! ", 400 );
         
     }
+    
+    
+    
     
     
     
