@@ -133,6 +133,7 @@ class OrderController extends Controller
     public function extraPay( $start_date, $first_pay_date, $month_interest )
     {
         // Get Difference In Days
+        
         $start_date = Carbon::parse( $start_date );
         $first_pay_date = Carbon::parse( $first_pay_date );
         $prev_pay_date = $first_pay_date->subMonth(1);
@@ -140,10 +141,12 @@ class OrderController extends Controller
         
         
         // Increase First Pay Date By Month
+        
         $second_pay_date = Carbon::parse( $first_pay_date )->addMonths(1)->format( 'Y-m-d' );
         
         
         // Get Interval Between Start Date And Next Months Pay Date
+        
         $second_pay_date = Carbon::parse( $second_pay_date );
         $diff_big = $second_pay_date->diffInDays( $first_pay_date );
         
@@ -507,20 +510,4 @@ class OrderController extends Controller
     }
     
     
-    
-    
 }
-
-
-
-
-
-
-
-
-
-
-
-//        $first_pay_date = strtotime( $first_pay_date );
-//        $second_pay_date = date( "Y-m-d", strtotime( "+1 month", $first_pay_date ) );
-//        $second_pay_date = Carbon::parse( $second_pay_date );

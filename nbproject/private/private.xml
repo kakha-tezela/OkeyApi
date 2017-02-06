@@ -5,6 +5,7 @@
         <group>
             <file>file:/C:/xampp/htdocs/OkeyApi/routes/web.php</file>
             <file>file:/C:/xampp/htdocs/OkeyApi/app/Http/Controllers/OrderController.php</file>
+            <file>file:/C:/xampp/htdocs/OkeyApi/app/Http/Controllers/UserController.php</file>
         </group>
     </open-files>
 </project-private>

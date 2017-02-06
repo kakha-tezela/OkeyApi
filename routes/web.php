@@ -13,6 +13,11 @@
 
 
 // Create Schedule For User
+Route::post('/account', 'AccountingController@action');
+
+
+
+// Create Schedule For User
 Route::post('/orderstatus', 'OrderController@orderStatus');
 
 
