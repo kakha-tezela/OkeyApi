@@ -13,7 +13,7 @@
 
 
 // Create Schedule For User
-Route::post('/account', 'AccountingController@action');
+Route::post('/account', 'AccountingController@emulator');
 
 
 
