@@ -102,6 +102,10 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
     public function emulator( Request $request )
     {
         $data = [
@@ -113,10 +117,7 @@ class AccountingController extends Controller
             'p_method_id'   => $request->p_method_id,
             
         ];
-        
-        
         return $this->incomeSeeder( $data );
-        
     }
     
     
@@ -142,7 +143,6 @@ class AccountingController extends Controller
         
         
         // Update User balance
-        
         $balance = User::where( 'id', '=', $data['user_id'] )->first(['balance']);
         
         if( $balance === null )
@@ -154,12 +154,12 @@ class AccountingController extends Controller
         ]);
         
         
-        if( $update === null )
+        if( !$update )
             return response()->json( "Failed To Update User Balance !", 404 );
         
         
         // Log Operation In Balance History Table
-        
+        $this->balanceLogger( $user_id, $action, $amount );
         
         
         // check debt in orders table
@@ -173,7 +173,7 @@ class AccountingController extends Controller
     
     
     
-    public function balanceLogger( $user_id, $amount )
+    public function balanceLogger( $user_id, $action, $amount )
     {
         // Get User Balance
         $balance = User::where( 'id', '=', $user_id )->first(['balance']);
@@ -182,11 +182,24 @@ class AccountingController extends Controller
             return response()->json( "Failed To Get User Balance !", 404 );
         
         
+        if( $action == "in" )
+        {
+            $balance = $balance->balance + $amount;
+        }
+        elseif( $action == "out" )
+        {
+            if( $balance->balance >= $amount )
+                $balance = $balance->balance - $amount;
+            else
+                $balance = 0;
+        }
+        
+        
         $data = [
             'user_id'   => $user_id,
-            'action'    => "in",
+            'action'    => $action,
             'amount'    => $amount,
-            'balance'   => $balance = $balance->balance + $amount,
+            'balance'   => $balance,
         ];
         
         $added = DB::table('balance_history')->insert( $data );
@@ -194,8 +207,6 @@ class AccountingController extends Controller
         if( !$added )
             return response()->json( "Failed To Seed Balance History !", 400 );
     }
-    
-    
     
     
     
