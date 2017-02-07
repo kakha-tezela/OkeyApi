@@ -125,8 +125,12 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
     public function incomeSeeder( $data )
     {
+        
         $row = [
             
             'pid'           => $data['pid'],
@@ -149,21 +153,28 @@ class AccountingController extends Controller
             return response()->json( "Failed To Get User Balance !", 404 );
         
         
-        $update = User::where('id', '=', $data['user_id'] )->update([
-            'balance' => $balance + $data['amount'],
-        ]);
+        $balance = $balance->balance + $data['amount'];
         
+        $update = User::where('id', '=', $data['user_id'] )->update([
+            'balance' => $balance,
+        ]);
         
         if( !$update )
             return response()->json( "Failed To Update User Balance !", 404 );
         
         
         // Log Operation In Balance History Table
-        $this->balanceLogger( $user_id, $action, $amount );
+        $this->balanceLogger( $data['user_id'], "in", $data['amount'], $balance );
         
         
-        // check debt in orders table
-        Order::where( 'id', '=', $data['order_id'] )->first(['']);
+        
+        // check debts in accounts table day before
+        
+        $allDebts = DB::table('accounting')->where( 'order_id', '=', $data['order_id'] )
+                    ->orderBy( 'create_date', 'desc' )
+                    ->first([ 'day_penalty_left', 'primary_penalty_left', 'interest_left', 'principal_left']);
+        
+        return $allDebts->day_penalty_left + $allDebts->primary_penalty_left + $allDebts->interest_left + $allDebts->principal_left;
         
     }
     
@@ -173,23 +184,107 @@ class AccountingController extends Controller
     
     
     
-    public function balanceLogger( $user_id, $action, $amount )
+    
+    
+    public function updateDebts( $day_penalty, $primary_penalty, $interest, $principal, $amount )
     {
-        // Get User Balance
-        $balance = User::where( 'id', '=', $user_id )->first(['balance']);
         
-        if( $balance === null )
-            return response()->json( "Failed To Get User Balance !", 404 );
+        // Update Day Penalty
         
+        if( $amount >= $day_penalty )
+        {
+            $amount -= $day_penalty;
+            $day_penalty = 0;
+        }
+        else
+        {
+            $day_penalty -= $amount;
+            $amount = 0;
+        }
+        
+
+
+        
+        // Update Primary Penalty
+        
+        if( $amount != 0 ):
+            
+            if( $amount >= $primary_penalty )
+            {
+                $amount -= $primary_penalty;
+                $primary_penalty = 0;
+            }
+            else
+            {
+                $primary_penalty -= $amount;
+                $amount = 0;
+            }
+            
+        endif;
+
+
+        
+        
+        // Update Interest
+        
+        if( $amount != 0 ):
+            
+            if( $amount >= $interest )
+            {
+                $amount -= $interest;
+                $interest = 0;
+            }
+            else
+            {
+                $interest -= $amount;
+                $amount = 0;
+            }
+            
+        endif;
+        
+        
+        
+        
+        // Update Principal
+        
+        if( $principal != 0 ):
+            
+            if( $amount >= $principal )
+            {
+                $amount -= $principal;
+                $principal = 0;
+            }
+            else
+            {
+                $principal -= $amount;
+                $amount = 0;
+            }
+            
+        endif;
+        
+        
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public function balanceLogger( $user_id, $action, $amount, $balance )
+    {
         
         if( $action == "in" )
         {
-            $balance = $balance->balance + $amount;
+            $balance += $amount;
         }
         elseif( $action == "out" )
         {
-            if( $balance->balance >= $amount )
-                $balance = $balance->balance - $amount;
+            if( $balance >= $amount )
+                $balance -= $amount;
             else
                 $balance = 0;
         }
@@ -207,7 +302,6 @@ class AccountingController extends Controller
         if( !$added )
             return response()->json( "Failed To Seed Balance History !", 400 );
     }
-    
     
     
     
