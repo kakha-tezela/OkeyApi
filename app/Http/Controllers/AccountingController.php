@@ -208,7 +208,6 @@ class AccountingController extends Controller
         
         return $balance->balance + $amount;
     
-        
     }
     
     
@@ -220,7 +219,26 @@ class AccountingController extends Controller
     
     public function updateDebts( $user_id, $order_id, $amount )
     {
-        // check it in accounting total_debt_left
+        // Check total_debt_left
+        $total_debt = DB::table('accounting')->where( 'order_id', '=', $order_id )
+                      ->orderBy( 'create_date', 'desc' )
+                      ->first([ 'total_debt_left']);
+        
+        
+        if( $total_debt === null )
+            return response()->json( "Failed To Get User Total Debt !", 404 );
+        
+        
+        
+        if( $total_debt->total_debt_left == 0 )
+            return [ 'amount' => $amount, 'day_penalty_left' => null, 'primary_penalty_left' => null, 'interest_left' => null, 'principal_left' => null ];
+        
+        
+        
+        $principal = null;
+        $interest = null;
+        $primary_penalty = null;
+        $day_penalty = null;
         
         
         // check debts in accounts table day before
@@ -232,7 +250,8 @@ class AccountingController extends Controller
         
         if( $allDebts === null )
             return response()->json( "Failed To Retrieve User Debts !", 400 );
- 
+
+        
 
         
         
@@ -241,6 +260,7 @@ class AccountingController extends Controller
         {
             $amount -= $allDebts->day_penalty_left;
             $day_penalty = 0;
+            
         }
         else
         {
@@ -310,7 +330,6 @@ class AccountingController extends Controller
         return [ 'amount' => $amount, 'day_penalty_left' => $day_penalty, 'primary_penalty_left' => $primary_penalty, 'interest_left' => $interest, 'principal_left' => $principal ];
 
     }
-    
     
     
     
