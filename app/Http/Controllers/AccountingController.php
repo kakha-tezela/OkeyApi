@@ -145,36 +145,21 @@ class AccountingController extends Controller
         if( !$added )
             return response()->json( "Failed To Seed Income !", 400 );
         
-        
-        // Update User balance
-        $balance = User::where( 'id', '=', $data['user_id'] )->first(['balance']);
-        
-        if( $balance === null )
-            return response()->json( "Failed To Get User Balance !", 404 );
-        
-        
-        $balance = $balance->balance + $data['amount'];
-        
-        $update = User::where('id', '=', $data['user_id'] )->update([
-            'balance' => $balance,
-        ]);
-        
-        if( !$update )
-            return response()->json( "Failed To Update User Balance !", 404 );
+       
+        // Update User balance 
+        $balance = $this->userBalanceUpdater( $data['user_id'], $data['amount'], true );
         
         
         // Log Operation In Balance History Table
         $this->balanceLogger( $data['user_id'], "in", $data['amount'], $balance );
         
         
+        // Update Debts And Get User Balance
+        $updatedDebts = $this->updateDebts( $data['user_id'], $data['order_id'], $balance );
         
-        // check debts in accounts table day before
         
-        $allDebts = DB::table('accounting')->where( 'order_id', '=', $data['order_id'] )
-                    ->orderBy( 'create_date', 'desc' )
-                    ->first([ 'day_penalty_left', 'primary_penalty_left', 'interest_left', 'principal_left']);
-        
-        return $allDebts->day_penalty_left + $allDebts->primary_penalty_left + $allDebts->interest_left + $allDebts->principal_left;
+        // Update User balance 
+        $this->userBalanceUpdater( $data['user_id'], $updatedDebts['amount'], false );
         
     }
     
@@ -185,38 +170,99 @@ class AccountingController extends Controller
     
     
     
-    
-    public function updateDebts( $day_penalty, $primary_penalty, $interest, $principal, $amount )
+    public function userBalanceUpdater( $user_id, $amount, $increase )
     {
         
-        // Update Day Penalty
+        if( !$increase ):
+            
+            $updated = User::where( 'id', '=', $user_id )->update([
+                            'balance' => $amount,
+                        ]);
         
-        if( $amount >= $day_penalty )
+            if( !$updated )
+                return response()->json( "Failed To Update User Balance !", 400 );
+        
+            return $amount; 
+            
+        endif;
+        
+        
+        
+         // Get User balance
+        $balance = User::where( 'id', '=', $user_id )->first(['balance']);
+        
+        if( $balance === null )
+            return response()->json( "Failed To Get User Balance !", 400 );
+        
+        
+        
+        // Update User balance
+        
+        $update = User::where('id', '=', $user_id )->update([
+            'balance' => $balance->balance + $amount,
+        ]);
+        
+        if( !$update )
+            return response()->json( "Failed To Update User Balance !", 404 );
+        
+        
+        return $balance->balance + $amount;
+    
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    public function updateDebts( $user_id, $order_id, $amount )
+    {
+        // check it in accounting total_debt_left
+        
+        
+        // check debts in accounts table day before
+        
+        $allDebts = DB::table('accounting')->where( 'order_id', '=', $order_id )
+                    ->orderBy( 'create_date', 'desc' )
+                    ->first([ 'day_penalty_left', 'primary_penalty_left', 'interest_left', 'principal_left']);
+        
+        
+        if( $allDebts === null )
+            return response()->json( "Failed To Retrieve User Debts !", 400 );
+ 
+
+        
+        
+        // Update Day Penalty
+        if( $amount >= $allDebts->day_penalty_left )
         {
-            $amount -= $day_penalty;
+            $amount -= $allDebts->day_penalty_left;
             $day_penalty = 0;
         }
         else
         {
-            $day_penalty -= $amount;
+            $day_penalty = $allDebts->day_penalty_left - $amount;
             $amount = 0;
         }
         
 
+        
 
         
         // Update Primary Penalty
-        
         if( $amount != 0 ):
             
-            if( $amount >= $primary_penalty )
+            if( $amount >= $allDebts->primary_penalty_left )
             {
-                $amount -= $primary_penalty;
+                $amount -= $allDebts->primary_penalty_left;
                 $primary_penalty = 0;
             }
             else
             {
-                $primary_penalty -= $amount;
+                $primary_penalty = $allDebts->primary_penalty_left - $amount;
                 $amount = 0;
             }
             
@@ -226,45 +272,48 @@ class AccountingController extends Controller
         
         
         // Update Interest
-        
         if( $amount != 0 ):
             
-            if( $amount >= $interest )
+            if( $amount >= $allDebts->interest_left )
             {
-                $amount -= $interest;
+                $amount -= $allDebts->interest_left;
                 $interest = 0;
             }
             else
             {
-                $interest -= $amount;
+                $interest = $allDebts->interest_left - $amount;
                 $amount = 0;
             }
             
         endif;
-        
         
         
         
         // Update Principal
-        
-        if( $principal != 0 ):
+        if( $amount != 0 ):
             
-            if( $amount >= $principal )
+            if( $amount >= $allDebts->principal_left )
             {
-                $amount -= $principal;
+                $amount -= $allDebts->principal_left;
                 $principal = 0;
             }
             else
             {
-                $principal -= $amount;
+                $principal = $allDebts->principal_left - $amount;
                 $amount = 0;
             }
             
         endif;
+
         
-        
-        
+        // return updated values
+        return [ 'amount' => $amount, 'day_penalty_left' => $day_penalty, 'primary_penalty_left' => $primary_penalty, 'interest_left' => $interest, 'principal_left' => $principal ];
+
     }
+    
+    
+    
+    
     
     
     
