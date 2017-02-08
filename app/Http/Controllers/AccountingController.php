@@ -159,9 +159,50 @@ class AccountingController extends Controller
         
         
         // Update User balance 
-        $this->userBalanceUpdater( $data['user_id'], $updatedDebts['amount'], false );
+        $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
+        
+        
+        // Log Operation In Balance History Table
+        $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
         
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public function balanceLogger( $user_id, $action, $amount, $balance )
+    {
+        $data = [
+            'user_id'   => $user_id,
+            'action'    => $action,
+            'amount'    => $amount,
+            'balance'   => $balance,
+        ];
+        
+        $added = DB::table('balance_history')->insert( $data );
+        
+        if( !$added )
+            return response()->json( "Failed To Seed Balance History !", 400 );
+    }
+    
+    
+    
+    
+    
+//        elseif( $action == "out" )
+//        {
+//            if( $balance >= $amount )
+//                $balance -= $amount;
+//            else
+//                $balance = 0;
+//        }
+    
+    
     
     
     
@@ -217,6 +258,8 @@ class AccountingController extends Controller
     
     
     
+    
+    
     public function updateDebts( $user_id, $order_id, $amount )
     {
         // Check total_debt_left
@@ -239,6 +282,7 @@ class AccountingController extends Controller
         $interest = null;
         $primary_penalty = null;
         $day_penalty = null;
+        $balance_payed = 0;
         
         
         // check debts in accounts table day before
@@ -260,11 +304,13 @@ class AccountingController extends Controller
         {
             $amount -= $allDebts->day_penalty_left;
             $day_penalty = 0;
+            $balance_payed += $allDebts->day_penalty_left;
             
         }
         else
         {
             $day_penalty = $allDebts->day_penalty_left - $amount;
+            $balance_payed += $amount;
             $amount = 0;
         }
         
@@ -279,10 +325,12 @@ class AccountingController extends Controller
             {
                 $amount -= $allDebts->primary_penalty_left;
                 $primary_penalty = 0;
+                $balance_payed += $allDebts->primary_penalty_left; 
             }
             else
             {
                 $primary_penalty = $allDebts->primary_penalty_left - $amount;
+                $balance_payed += $amount;
                 $amount = 0;
             }
             
@@ -297,11 +345,13 @@ class AccountingController extends Controller
             if( $amount >= $allDebts->interest_left )
             {
                 $amount -= $allDebts->interest_left;
+                $balance_payed += $allDebts->interest_left; 
                 $interest = 0;
             }
             else
             {
                 $interest = $allDebts->interest_left - $amount;
+                $balance_payed += $amount;
                 $amount = 0;
             }
             
@@ -315,11 +365,13 @@ class AccountingController extends Controller
             if( $amount >= $allDebts->principal_left )
             {
                 $amount -= $allDebts->principal_left;
+                $balance_payed += $allDebts->principal_left;
                 $principal = 0;
             }
             else
             {
                 $principal = $allDebts->principal_left - $amount;
+                $balance_payed += $amount;
                 $amount = 0;
             }
             
@@ -327,7 +379,7 @@ class AccountingController extends Controller
 
         
         // return updated values
-        return [ 'amount' => $amount, 'day_penalty_left' => $day_penalty, 'primary_penalty_left' => $primary_penalty, 'interest_left' => $interest, 'principal_left' => $principal ];
+        return [ 'balance_left' => $amount, 'balance_payed' => $balance_payed, 'day_penalty_left' => $day_penalty, 'primary_penalty_left' => $primary_penalty, 'interest_left' => $interest, 'principal_left' => $principal ];
 
     }
     
@@ -342,35 +394,6 @@ class AccountingController extends Controller
     
     
     
-    public function balanceLogger( $user_id, $action, $amount, $balance )
-    {
-        
-        if( $action == "in" )
-        {
-            $balance += $amount;
-        }
-        elseif( $action == "out" )
-        {
-            if( $balance >= $amount )
-                $balance -= $amount;
-            else
-                $balance = 0;
-        }
-        
-        
-        $data = [
-            'user_id'   => $user_id,
-            'action'    => $action,
-            'amount'    => $amount,
-            'balance'   => $balance,
-        ];
-        
-        $added = DB::table('balance_history')->insert( $data );
-        
-        if( !$added )
-            return response()->json( "Failed To Seed Balance History !", 400 );
-    }
-    
-    
+   
     
 }
