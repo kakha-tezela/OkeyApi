@@ -130,7 +130,6 @@ class AccountingController extends Controller
     
     public function incomeSeeder( $data )
     {
-        
         $row = [
             
             'pid'           => $data['pid'],
@@ -140,48 +139,38 @@ class AccountingController extends Controller
             'p_method_id'   => $data['p_method_id'],
         ];
         
-        $added = DB::table('incomes')->insert( $row );
         
-        if( !$added )
-            return response()->json( "Failed To Seed Income !", 400 );
+        // Get Income Date
+        
+        $id = DB::table('incomes')->insertGetId( $row );
+        $income_date = DB::table('incomes')->where( 'id', $id )->first(['date']);
+        
+        if( $income_date === null )
+            return reposne()->json( "Failed To Get Income Date", 400 );
+        
         
        
-        // Update User balance 
+        // Update User balance And Log Operation In Balance History Table
         $balance = $this->userBalanceUpdater( $data['user_id'], $data['amount'], true );
-        
-        
-        // Log Operation In Balance History Table
         $this->balanceLogger( $data['user_id'], "in", $data['amount'], $balance );
         
         
-        // Update Debts And Get User Balance
-        $updatedDebts = $this->updateDebts( $data['user_id'], $data['order_id'], $balance );
+        // Update User Debts
+        $updatedDebts = $this->updateDebts( $data['user_id'], $data['order_id'], $income_date->date, $balance );
 
-        return $updatedDebts; 
-        
         
         // if debt was detected
-        if( $updatedDebts['balance_left'] != null ):
+        if( $updatedDebts['changed'] == 1 ):
             
-            // Update User balance 
+            // Update User balance And Log Operation In Balance History Table
             $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
-
-            // Log Operation In Balance History Table
             $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
+        
+            // Seed In Account
+            return $this->accountSeederIncome( $updatedDebts, $income_date->date );
 
         endif;
         
-        
-    }
-    
-    
-    
-    
-    
-//    
-    public function getDebt( $order_id )
-    {
-        DB::table('schedule')->where( 'order_id', '=', $order_id )->first(['month_amount']);
     }
     
     
@@ -189,38 +178,57 @@ class AccountingController extends Controller
     
     
     
-    public function accountSeederIncome( $order_id, $updatedDebts, $income_date )
+    
+    
+    
+    
+    
+    public function accountSeederIncome( $updatedDebts, $income_date )
     {
         
         // order id passed by income seeder function
-//        
-//        $data = [
-//            
-//            "order_id"                  =>  $order_id, 
-//            "action"                    =>  "i",
-//            "pay_date"                  =>  $income_date, // from income table
-//            "debt"                      =>   // debt_left day before 
-//            "debt_left"                 =>  $updatedDebts['principal_left'] + $updatedDebts['interest_left'], 
-//            "principal"                 =>  $updatedDebts['principal'], // principal left day before
-//            "principal_payed"           =>  $updatedDebts['principal_payed'],
-//            "principal_left"            =>  $updatedDebts['principal_left'],  
-//            "interest"                  =>  $updatedDebts['interest'], 
-//            "interest_payed"            =>  $updatedDebts['interest_payed'], 
-//            "interest_left"             =>  $updatedDebts['interest_left'],
-//            "primary_penalty"           =>  $updatedDebts['primary_penalty'], 
-//            "primary_penalty_payed"     =>  $updatedDebts['primary_penalty_payed'],// 
-//            "primary_penalty_left"      =>  $updatedDebts['primary_penalty_left'],
-//            "day_penalty"               =>  0,
-//            "day_penalty_total"         =>  $updatedDebts['day_penalty_total'], // day before day penalty left
-//            "day_penalty_payed"         =>  $updatedDebts['day_penalty_payed'], // income amounts
-//            "day_penalty_left"          =>  $updatedDebts['day_penalty_left'],
-//            "overdue_cnt"               =>  // to be completed
-//            "total_debt"                =>  $updatedDebts['total_debt'], // day before total_debt_left
-//            "total_debt_left"           =>  $updatedDebts['total_debt_left'],
-//            "income_amount"             =>  $updatedDebts['balance_payed'],
-//            
-//        ];
+        
+        $data = [
+            
+            "order_id"                  =>  $updatedDebts['order_id'], 
+            "action"                    =>  "i",
+            "pay_date"                  =>  $income_date,
+            "debt"                      =>  $updatedDebts['debt'], 
+            "debt_left"                 =>  $updatedDebts['principal_left'] + $updatedDebts['interest_left'], 
+            "principal"                 =>  $updatedDebts['principal'],
+            "principal_payed"           =>  $updatedDebts['principal_payed'],
+            "principal_left"            =>  $updatedDebts['principal_left'],  
+            "interest"                  =>  $updatedDebts['interest'], 
+            "interest_payed"            =>  $updatedDebts['interest_payed'], 
+            "interest_left"             =>  $updatedDebts['interest_left'],
+            "primary_penalty"           =>  $updatedDebts['primary_penalty'], 
+            "primary_penalty_payed"     =>  $updatedDebts['primary_penalty_payed'], 
+            "primary_penalty_left"      =>  $updatedDebts['primary_penalty_left'],
+            "day_penalty"               =>  0,
+            "day_penalty_total"         =>  $updatedDebts['day_penalty'], 
+            "day_penalty_payed"         =>  $updatedDebts['day_penalty_payed'],
+            "day_penalty_left"          =>  $updatedDebts['day_penalty_left'],
+            "overdue_cnt"               =>  3, // to be completed
+            "total_debt"                =>  $updatedDebts['total_debt'],
+            "total_debt_left"           =>  $updatedDebts['total_debt_left'],
+            "income_amount"             =>  $updatedDebts['balance_payed'],
+            
+        ];
+        
+        
+        $added = DB::table('accounting')->insert( $data );
+        
+        if( !$added )
+            return response()->json( "Failed To Account Income", 400 );
+        
+            return response()->json( "Operation Succesfull !", 200 );
+        
     }
+    
+    
+    
+    
+    
     
     
     
@@ -305,7 +313,7 @@ class AccountingController extends Controller
     
     
     
-    public function updateDebts( $user_id, $order_id, $amount )
+    public function updateDebts( $user_id, $order_id, $date, $amount )
     {
         
         // Check total_debt_left
@@ -320,7 +328,7 @@ class AccountingController extends Controller
         
         
         if( $total_debt->total_debt_left == 0 )
-            return [ 'balance_left' => null, 'balance_payed' => null, 'day_penalty_left' => null, 'primary_penalty_left' => null, 'interest_left' => null, 'principal_left' => null ];
+            return [ 'changed' => 0 ];
         
         
         
@@ -346,6 +354,7 @@ class AccountingController extends Controller
         $primary_penalty_left = $allDebts->primary_penalty_left;
         $day_penalty_payed = 0;
         $day_penalty_left = $allDebts->day_penalty_left;
+        
         
         
         // Update Day Penalty
@@ -434,11 +443,18 @@ class AccountingController extends Controller
         endif;
 
         
+        // Define Total Debt And Total Debt Left
+        
+        $totalDebt = $total_debt->day_penalty_left + $total_debt->primary_penalty_left + $total_debt->interest_left + $total_debt->principal_left;
+        $totalDebtLeft = $day_penalty_left + $primary_penalty_left + $interest_left + $principal_left;
+        
+        
         
         // return updated values
         
         return [
             
+            'changed'                => 1,
             'balance_left'           => $amount,
             'balance_payed'          => $balance_payed,
             'day_penalty'            => $total_debt->day_penalty_left,
@@ -453,11 +469,18 @@ class AccountingController extends Controller
             'principal'              => $total_debt->principal_left,
             'principal_payed'        => $principal_payed, 
             'principal_left'         => $principal_left,
+            'total_debt'             => $totalDebt,
+            'total_debt_left'        => $totalDebtLeft,
+            'debt'                   => $total_debt->debt_left,
+            //'income_date'            => $date,
+            'order_id'               => $order_id,
         ];
-
+        
+        
     }
     
+
+
     
-   
     
 }
