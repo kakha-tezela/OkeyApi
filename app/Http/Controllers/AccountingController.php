@@ -156,17 +156,71 @@ class AccountingController extends Controller
         
         // Update Debts And Get User Balance
         $updatedDebts = $this->updateDebts( $data['user_id'], $data['order_id'], $balance );
+
+        return $updatedDebts; 
         
         
-        // Update User balance 
-        $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
+        // if debt was detected
+        if( $updatedDebts['balance_left'] != null ):
+            
+            // Update User balance 
+            $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
+
+            // Log Operation In Balance History Table
+            $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
+
+        endif;
         
-        
-        // Log Operation In Balance History Table
-        $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
         
     }
     
+    
+    
+    
+    
+//    
+    public function getDebt( $order_id )
+    {
+        DB::table('schedule')->where( 'order_id', '=', $order_id )->first(['month_amount']);
+    }
+    
+    
+    
+    
+    
+    
+    public function accountSeederIncome( $order_id, $updatedDebts, $income_date )
+    {
+        
+        // order id passed by income seeder function
+//        
+//        $data = [
+//            
+//            "order_id"                  =>  $order_id, 
+//            "action"                    =>  "i",
+//            "pay_date"                  =>  $income_date, // from income table
+//            "debt"                      =>   // debt_left day before 
+//            "debt_left"                 =>  $updatedDebts['principal_left'] + $updatedDebts['interest_left'], 
+//            "principal"                 =>  $updatedDebts['principal'], // principal left day before
+//            "principal_payed"           =>  $updatedDebts['principal_payed'],
+//            "principal_left"            =>  $updatedDebts['principal_left'],  
+//            "interest"                  =>  $updatedDebts['interest'], 
+//            "interest_payed"            =>  $updatedDebts['interest_payed'], 
+//            "interest_left"             =>  $updatedDebts['interest_left'],
+//            "primary_penalty"           =>  $updatedDebts['primary_penalty'], 
+//            "primary_penalty_payed"     =>  $updatedDebts['primary_penalty_payed'],// 
+//            "primary_penalty_left"      =>  $updatedDebts['primary_penalty_left'],
+//            "day_penalty"               =>  0,
+//            "day_penalty_total"         =>  $updatedDebts['day_penalty_total'], // day before day penalty left
+//            "day_penalty_payed"         =>  $updatedDebts['day_penalty_payed'], // income amounts
+//            "day_penalty_left"          =>  $updatedDebts['day_penalty_left'],
+//            "overdue_cnt"               =>  // to be completed
+//            "total_debt"                =>  $updatedDebts['total_debt'], // day before total_debt_left
+//            "total_debt_left"           =>  $updatedDebts['total_debt_left'],
+//            "income_amount"             =>  $updatedDebts['balance_payed'],
+//            
+//        ];
+    }
     
     
     
@@ -194,17 +248,6 @@ class AccountingController extends Controller
     
     
     
-//        elseif( $action == "out" )
-//        {
-//            if( $balance >= $amount )
-//                $balance -= $amount;
-//            else
-//                $balance = 0;
-//        }
-    
-    
-    
-    
     
     
     
@@ -228,8 +271,8 @@ class AccountingController extends Controller
         endif;
         
         
+        // Get User balance
         
-         // Get User balance
         $balance = User::where( 'id', '=', $user_id )->first(['balance']);
         
         if( $balance === null )
@@ -260,12 +303,15 @@ class AccountingController extends Controller
     
     
     
+    
+    
     public function updateDebts( $user_id, $order_id, $amount )
     {
+        
         // Check total_debt_left
         $total_debt = DB::table('accounting')->where( 'order_id', '=', $order_id )
                       ->orderBy( 'create_date', 'desc' )
-                      ->first([ 'total_debt_left']);
+                      ->first();
         
         
         if( $total_debt === null )
@@ -274,15 +320,9 @@ class AccountingController extends Controller
         
         
         if( $total_debt->total_debt_left == 0 )
-            return [ 'amount' => $amount, 'day_penalty_left' => null, 'primary_penalty_left' => null, 'interest_left' => null, 'principal_left' => null ];
+            return [ 'balance_left' => null, 'balance_payed' => null, 'day_penalty_left' => null, 'primary_penalty_left' => null, 'interest_left' => null, 'principal_left' => null ];
         
         
-        
-        $principal = null;
-        $interest = null;
-        $primary_penalty = null;
-        $day_penalty = null;
-        $balance_payed = 0;
         
         
         // check debts in accounts table day before
@@ -297,24 +337,34 @@ class AccountingController extends Controller
 
         
 
+        $balance_payed = 0;
+        $principal_left = $allDebts->principal_left;
+        $principal_payed = 0;
+        $interest_payed = 0;
+        $interest_left = $allDebts->interest_left;
+        $primary_penalty_payed = 0;
+        $primary_penalty_left = $allDebts->primary_penalty_left;
+        $day_penalty_payed = 0;
+        $day_penalty_left = $allDebts->day_penalty_left;
         
         
         // Update Day Penalty
         if( $amount >= $allDebts->day_penalty_left )
         {
             $amount -= $allDebts->day_penalty_left;
-            $day_penalty = 0;
+            $day_penalty_left = 0;
+            $day_penalty_payed = $allDebts->day_penalty_left;
             $balance_payed += $allDebts->day_penalty_left;
             
         }
         else
         {
-            $day_penalty = $allDebts->day_penalty_left - $amount;
+            $day_penalty_left = $allDebts->day_penalty_left - $amount;
+            $day_penalty_payed = $amount;
             $balance_payed += $amount;
             $amount = 0;
         }
         
-
         
 
         
@@ -324,12 +374,14 @@ class AccountingController extends Controller
             if( $amount >= $allDebts->primary_penalty_left )
             {
                 $amount -= $allDebts->primary_penalty_left;
-                $primary_penalty = 0;
+                $primary_penalty_left = 0;
+                $primary_penalty_payed = $allDebts->primary_penalty_left;
                 $balance_payed += $allDebts->primary_penalty_left; 
             }
             else
             {
-                $primary_penalty = $allDebts->primary_penalty_left - $amount;
+                $primary_penalty_left = $allDebts->primary_penalty_left - $amount;
+                $primary_penalty_payed = $amount;
                 $balance_payed += $amount;
                 $amount = 0;
             }
@@ -345,12 +397,14 @@ class AccountingController extends Controller
             if( $amount >= $allDebts->interest_left )
             {
                 $amount -= $allDebts->interest_left;
+                $interest_left = 0;
+                $interest_payed = $allDebts->interest_left;
                 $balance_payed += $allDebts->interest_left; 
-                $interest = 0;
             }
             else
             {
-                $interest = $allDebts->interest_left - $amount;
+                $interest_left = $allDebts->interest_left - $amount;
+                $interest_payed = $amount;
                 $balance_payed += $amount;
                 $amount = 0;
             }
@@ -365,12 +419,14 @@ class AccountingController extends Controller
             if( $amount >= $allDebts->principal_left )
             {
                 $amount -= $allDebts->principal_left;
+                $principal_left = 0;
+                $principal_payed = $allDebts->principal_left;
                 $balance_payed += $allDebts->principal_left;
-                $principal = 0;
             }
             else
             {
-                $principal = $allDebts->principal_left - $amount;
+                $principal_left = $allDebts->principal_left - $amount;
+                $principal_payed = $amount;
                 $balance_payed += $amount;
                 $amount = 0;
             }
@@ -378,20 +434,28 @@ class AccountingController extends Controller
         endif;
 
         
+        
         // return updated values
-        return [ 'balance_left' => $amount, 'balance_payed' => $balance_payed, 'day_penalty_left' => $day_penalty, 'primary_penalty_left' => $primary_penalty, 'interest_left' => $interest, 'principal_left' => $principal ];
+        
+        return [
+            
+            'balance_left'           => $amount,
+            'balance_payed'          => $balance_payed,
+            'day_penalty'            => $total_debt->day_penalty_left,
+            'day_penalty_payed'      => $day_penalty_payed,
+            'day_penalty_left'       => $day_penalty_left,
+            'primary_penalty'        => $total_debt->primary_penalty_left,
+            'primary_penalty_payed'  => $primary_penalty_payed, 
+            'primary_penalty_left'   => $primary_penalty_left,
+            'interest'               => $total_debt->interest_left,
+            'interest_payed'         => $interest_payed,
+            'interest_left'          => $interest_left,
+            'principal'              => $total_debt->principal_left,
+            'principal_payed'        => $principal_payed, 
+            'principal_left'         => $principal_left,
+        ];
 
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
    
