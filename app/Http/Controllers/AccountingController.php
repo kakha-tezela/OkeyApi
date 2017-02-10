@@ -9,6 +9,194 @@ use Carbon\Carbon;
 class AccountingController extends Controller
 {
     
+    
+    
+    
+    
+    
+    
+    
+    
+    public function accountSeederCheck()
+    {
+        $action = "c";
+        $pay_date = Carbon::now()->format('Y-m-d');
+        
+       // take all active orders and acount them
+       
+        $order = Order::where('id',6)->first(['id','service_id']);
+
+        
+       // check if order has shcedule
+       
+       $scheduleDates = DB::table('schedule')->where( 'order_id', $order->id )->get(['pay_date']);
+       
+       foreach( $scheduleDates as $date ):
+
+           if( Carbon::now()->format( 'Y-m-d' ) == $date->pay_date ):
+               
+               $action = "s";
+               $pay_date = $date->pay_date;
+            
+               break;
+            
+            endif;
+
+        endforeach;
+       
+       
+       $updatedDebts = $this->checkDebts( $order->id, $action, $order->service_id );
+       
+       return $updatedDebts; 
+       
+        $data = [
+
+             "order_id"               => $order->id,
+             "action"                 => $action,
+             "pay_date"               => $pay_date,
+             "debt"                   => $updatedDebts['debt'],
+             "debt_left"              => $updatedDebts['principal_left'] + $updatedDebts['interest_left'], 
+             "principal"              => $updatedDebts['principal'],
+             "principal_payed"        => $updatedDebts['principal_payed'],
+             "principal_left"         => $updatedDebts['principal_left'],
+             "interest"               => $updatedDebts['interest'],
+             "interest_payed"         => $updatedDebts['interest_payed'],
+             "interest_left"          => $updatedDebts['interest_left'],
+             "primary_penalty"        => $updatedDebts['primary_penalty'],
+             "primary_penalty_payed"  => $updatedDebts['primary_penalty_payed'],
+             "primary_penalty_left"   => $updatedDebts['primary_penalty_left'],
+             "day_penalty"            => 0,
+             "day_penalty_total"      => $updatedDebts['day_penalty'],
+             "day_penalty_payed"      => $updatedDebts['day_penalty_payed'],
+             "day_penalty_left"       => $updatedDebts['day_penalty_left'],
+             "overdue_cnt"            => 0, // to be completed
+             "total_debt"             => $updatedDebts['total_debt'],
+             "total_debt_left"        => $updatedDebts['total_debt_left'],
+             "income_amount"          => $updatedDebts['balance_payed'],
+        ];
+            
+            
+        return $data;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public function checkDebts( $order_id, $action, $service_id )
+    {
+        
+        if( $action == "s" ):
+
+            // check user balance and update debts
+            $user_id = Order::where('id',$order_id)->first(['user_id']);
+        
+            if( $user_id === null )
+                return response()->json( "Failed To Get User Id", 400 );
+
+            
+            $user_balance = User::where( 'id', $user_id->user_id )->first(['balance']);
+
+            if( $user_balance === null )
+                return response()->json( "Failed To Get User Balance", 400 );
+            
+
+            $updatedDebts = $this->updateDebts( $order_id, $user_balance->balance );
+            
+            // if not entirely covered add primary penalty
+            if( $updatedDebts['principal_left'] > 0 ):
+                
+                // And Add Primary Penalty
+                
+                $primaryPenalty = DB::table('services')->where( 'id', $service_id )->first(['primary_penalty']);
+                
+                if( $primaryPenalty === null )
+                    return response()->json("Failed To Get Primary Penalty");
+                
+                
+                // add primary penalty
+                $updatedDebts['primary_penalty'] = $primaryPenalty->primary_penalty;
+                $updatedDebts['primary_penalty_payed'] = 0;
+                $updatedDebts['primary_penalty_left'] = $primaryPenalty->primary_penalty;
+                $updatedDebts['total_debt'] += $primaryPenalty->primary_penalty;
+                $updatedDebts['total_debt_left'] += $primaryPenalty->primary_penalty;
+                
+            endif;
+            
+            return $updatedDebts;
+            
+        endif;
+        
+        
+        
+        if( $action == "c" ):
+            
+            // check if order has debt
+            $total_debt = DB::table('accounting')
+                          ->where('order_id',$order_id)
+                          ->orderBy('create_date','desc')
+                          ->first(['total_debt_left']);
+        
+            if( $total_debt === null )
+                return response()->json("Failed To Get Total Debt", 400);
+            
+            
+            if( $total_debt->total_debt_left > 0 )
+                return $this->updateDebts( $order_id, $user_balance->balance );
+                
+            
+            // all debts will be 0
+            
+            return   [
+                    "balance_left"          => $user_balance->balance,
+                    "balance_payed"         => 0,
+                    "day_penalty"           => 0,
+                    "day_penalty_payed"     => 0,
+                    "day_penalty_left"      => 0,
+                    "primary_penalty"       => 0,
+                    "primary_penalty_payed" => 0,
+                    "primary_penalty_left"  => 0,
+                    "interest"              => 0,
+                    "interest_payed"        => 0,
+                    "interest_left"         => 0,
+                    "principal"             => 0,
+                    "principal_payed"       => 0,
+                    "principal_left"        => 0,
+                    "total_debt"            => 0,
+                    "total_debt_left"       => 0,
+                    "debt"                  => 0,
+                    "order_id"              => $order_id,
+                ];
+            
+        endif;
+            
+            
+            
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     public function accounting( $action = 0 )
     {
             // Get Active Orders
@@ -155,23 +343,218 @@ class AccountingController extends Controller
         $this->balanceLogger( $data['user_id'], "in", $data['amount'], $balance );
         
         
-        // Update User Debts
-        $updatedDebts = $this->updateDebts( $data['user_id'], $data['order_id'], $income_date->date, $balance );
-
+        // Check total_debt_left
+        $total_debt = DB::table('accounting')->where( 'order_id', '=', $data['order_id'] )
+                      ->orderBy( 'create_date', 'desc' )
+                      ->first(['total_debt_left']);
         
-        // if debt was detected
-        if( $updatedDebts['changed'] == 1 ):
+        
+        if( $total_debt === null )
+            return response()->json( "Failed To Get User Total Debt !", 404 );
+        
+        
+        
+        
+        if( $total_debt->total_debt_left > 0 ):
+            
+            // Update User Debts
+            $updatedDebts = $this->updateDebts( $data['order_id'], $balance );
             
             // Update User balance And Log Operation In Balance History Table
             $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
             $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
-        
+
             // Seed In Account
             return $this->accountSeederIncome( $updatedDebts, $income_date->date );
-
+            
         endif;
         
     }
+    
+    
+    
+    
+    
+    
+    
+    
+     
+    public function updateDebts( $order_id, $amount )
+    {
+        
+        
+        // check debts in accounts table day before
+        
+        $allDebts = DB::table('accounting')->where( 'order_id', '=', $order_id )
+                    ->orderBy( 'create_date', 'desc' )
+                    ->first([ 'day_penalty_left', 'primary_penalty_left', 'interest_left', 'principal_left', 'debt_left']);
+        
+        
+        if( $allDebts === null )
+            return response()->json( "Failed To Retrieve User Debts !", 400 );
+
+        
+
+        $balance_payed = 0;
+        $principal_left = $allDebts->principal_left;
+        $principal_payed = 0;
+        $interest_payed = 0;
+        $interest_left = $allDebts->interest_left;
+        $primary_penalty_payed = 0;
+        $primary_penalty_left = $allDebts->primary_penalty_left;
+        $day_penalty_payed = 0;
+        $day_penalty_left = $allDebts->day_penalty_left;
+        
+        
+        
+        // Update Day Penalty
+        if( $amount >= $allDebts->day_penalty_left )
+        {
+            $amount -= $allDebts->day_penalty_left;
+            $day_penalty_left = 0;
+            $day_penalty_payed = $allDebts->day_penalty_left;
+            $balance_payed += $allDebts->day_penalty_left;
+            
+        }
+        else
+        {
+            $day_penalty_left = $allDebts->day_penalty_left - $amount;
+            $day_penalty_payed = $amount;
+            $balance_payed += $amount;
+            $amount = 0;
+        }
+        
+        
+
+        
+        // Update Primary Penalty
+        if( $amount != 0 ):
+            
+            if( $amount >= $allDebts->primary_penalty_left )
+            {
+                $amount -= $allDebts->primary_penalty_left;
+                $primary_penalty_left = 0;
+                $primary_penalty_payed = $allDebts->primary_penalty_left;
+                $balance_payed += $allDebts->primary_penalty_left; 
+            }
+            else
+            {
+                $primary_penalty_left = $allDebts->primary_penalty_left - $amount;
+                $primary_penalty_payed = $amount;
+                $balance_payed += $amount;
+                $amount = 0;
+            }
+            
+        endif;
+
+
+        
+        
+        // Update Interest
+        if( $amount != 0 ):
+            
+            if( $amount >= $allDebts->interest_left )
+            {
+                $amount -= $allDebts->interest_left;
+                $interest_left = 0;
+                $interest_payed = $allDebts->interest_left;
+                $balance_payed += $allDebts->interest_left; 
+            }
+            else
+            {
+                $interest_left = $allDebts->interest_left - $amount;
+                $interest_payed = $amount;
+                $balance_payed += $amount;
+                $amount = 0;
+            }
+            
+        endif;
+        
+        
+        
+        // Update Principal
+        if( $amount != 0 ):
+            
+            if( $amount >= $allDebts->principal_left )
+            {
+                $amount -= $allDebts->principal_left;
+                $principal_left = 0;
+                $principal_payed = $allDebts->principal_left;
+                $balance_payed += $allDebts->principal_left;
+            }
+            else
+            {
+                $principal_left = $allDebts->principal_left - $amount;
+                $principal_payed = $amount;
+                $balance_payed += $amount;
+                $amount = 0;
+            }
+            
+        endif;
+
+        
+        // Define Total Debt And Total Debt Left
+        
+        $totalDebt = $allDebts->day_penalty_left + $allDebts->primary_penalty_left + $allDebts->interest_left + $allDebts->principal_left;
+        $totalDebtLeft = $day_penalty_left + $primary_penalty_left + $interest_left + $principal_left;
+        
+        
+        
+        // return updated values
+        
+        return [
+            
+            'balance_left'           => $amount,
+            'balance_payed'          => $balance_payed,
+            'day_penalty'            => $allDebts->day_penalty_left,
+            'day_penalty_payed'      => $day_penalty_payed,
+            'day_penalty_left'       => $day_penalty_left,
+            'primary_penalty'        => $allDebts->primary_penalty_left,
+            'primary_penalty_payed'  => $primary_penalty_payed, 
+            'primary_penalty_left'   => $primary_penalty_left,
+            'interest'               => $allDebts->interest_left,
+            'interest_payed'         => $interest_payed,
+            'interest_left'          => $interest_left,
+            'principal'              => $allDebts->principal_left,
+            'principal_payed'        => $principal_payed, 
+            'principal_left'         => $principal_left,
+            'total_debt'             => $totalDebt,
+            'total_debt_left'        => $totalDebtLeft,
+            'debt'                   => $allDebts->debt_left,
+            'order_id'               => $order_id,
+        ];
+        
+        
+    }
+    
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -312,175 +695,7 @@ class AccountingController extends Controller
     
     
     
-    
-    public function updateDebts( $user_id, $order_id, $date, $amount )
-    {
-        
-        // Check total_debt_left
-        $total_debt = DB::table('accounting')->where( 'order_id', '=', $order_id )
-                      ->orderBy( 'create_date', 'desc' )
-                      ->first();
-        
-        
-        if( $total_debt === null )
-            return response()->json( "Failed To Get User Total Debt !", 404 );
-        
-        
-        
-        if( $total_debt->total_debt_left == 0 )
-            return [ 'changed' => 0 ];
-        
-        
-        
-        
-        // check debts in accounts table day before
-        
-        $allDebts = DB::table('accounting')->where( 'order_id', '=', $order_id )
-                    ->orderBy( 'create_date', 'desc' )
-                    ->first([ 'day_penalty_left', 'primary_penalty_left', 'interest_left', 'principal_left']);
-        
-        
-        if( $allDebts === null )
-            return response()->json( "Failed To Retrieve User Debts !", 400 );
-
-        
-
-        $balance_payed = 0;
-        $principal_left = $allDebts->principal_left;
-        $principal_payed = 0;
-        $interest_payed = 0;
-        $interest_left = $allDebts->interest_left;
-        $primary_penalty_payed = 0;
-        $primary_penalty_left = $allDebts->primary_penalty_left;
-        $day_penalty_payed = 0;
-        $day_penalty_left = $allDebts->day_penalty_left;
-        
-        
-        
-        // Update Day Penalty
-        if( $amount >= $allDebts->day_penalty_left )
-        {
-            $amount -= $allDebts->day_penalty_left;
-            $day_penalty_left = 0;
-            $day_penalty_payed = $allDebts->day_penalty_left;
-            $balance_payed += $allDebts->day_penalty_left;
-            
-        }
-        else
-        {
-            $day_penalty_left = $allDebts->day_penalty_left - $amount;
-            $day_penalty_payed = $amount;
-            $balance_payed += $amount;
-            $amount = 0;
-        }
-        
-        
-
-        
-        // Update Primary Penalty
-        if( $amount != 0 ):
-            
-            if( $amount >= $allDebts->primary_penalty_left )
-            {
-                $amount -= $allDebts->primary_penalty_left;
-                $primary_penalty_left = 0;
-                $primary_penalty_payed = $allDebts->primary_penalty_left;
-                $balance_payed += $allDebts->primary_penalty_left; 
-            }
-            else
-            {
-                $primary_penalty_left = $allDebts->primary_penalty_left - $amount;
-                $primary_penalty_payed = $amount;
-                $balance_payed += $amount;
-                $amount = 0;
-            }
-            
-        endif;
-
-
-        
-        
-        // Update Interest
-        if( $amount != 0 ):
-            
-            if( $amount >= $allDebts->interest_left )
-            {
-                $amount -= $allDebts->interest_left;
-                $interest_left = 0;
-                $interest_payed = $allDebts->interest_left;
-                $balance_payed += $allDebts->interest_left; 
-            }
-            else
-            {
-                $interest_left = $allDebts->interest_left - $amount;
-                $interest_payed = $amount;
-                $balance_payed += $amount;
-                $amount = 0;
-            }
-            
-        endif;
-        
-        
-        
-        // Update Principal
-        if( $amount != 0 ):
-            
-            if( $amount >= $allDebts->principal_left )
-            {
-                $amount -= $allDebts->principal_left;
-                $principal_left = 0;
-                $principal_payed = $allDebts->principal_left;
-                $balance_payed += $allDebts->principal_left;
-            }
-            else
-            {
-                $principal_left = $allDebts->principal_left - $amount;
-                $principal_payed = $amount;
-                $balance_payed += $amount;
-                $amount = 0;
-            }
-            
-        endif;
-
-        
-        // Define Total Debt And Total Debt Left
-        
-        $totalDebt = $total_debt->day_penalty_left + $total_debt->primary_penalty_left + $total_debt->interest_left + $total_debt->principal_left;
-        $totalDebtLeft = $day_penalty_left + $primary_penalty_left + $interest_left + $principal_left;
-        
-        
-        
-        // return updated values
-        
-        return [
-            
-            'changed'                => 1,
-            'balance_left'           => $amount,
-            'balance_payed'          => $balance_payed,
-            'day_penalty'            => $total_debt->day_penalty_left,
-            'day_penalty_payed'      => $day_penalty_payed,
-            'day_penalty_left'       => $day_penalty_left,
-            'primary_penalty'        => $total_debt->primary_penalty_left,
-            'primary_penalty_payed'  => $primary_penalty_payed, 
-            'primary_penalty_left'   => $primary_penalty_left,
-            'interest'               => $total_debt->interest_left,
-            'interest_payed'         => $interest_payed,
-            'interest_left'          => $interest_left,
-            'principal'              => $total_debt->principal_left,
-            'principal_payed'        => $principal_payed, 
-            'principal_left'         => $principal_left,
-            'total_debt'             => $totalDebt,
-            'total_debt_left'        => $totalDebtLeft,
-            'debt'                   => $total_debt->debt_left,
-            //'income_date'            => $date,
-            'order_id'               => $order_id,
-        ];
-        
-        
-    }
-    
-
-
+   
     
     
 }

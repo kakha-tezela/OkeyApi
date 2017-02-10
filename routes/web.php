@@ -13,7 +13,13 @@
 
 
 
-// Create Schedule For User
+// Account Check
+Route::post('/check', 'AccountingController@accountSeederCheck');
+
+
+
+
+// Account Income
 Route::post('/account', 'AccountingController@emulator');
 
 
