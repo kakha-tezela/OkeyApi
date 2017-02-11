@@ -41,7 +41,7 @@ class AccountingController extends Controller
        
        $updatedDebts = $this->checkDebts( $order->id, $action, $order->service_id );
        
-       //return $updatedDebts; 
+       return $updatedDebts; 
        
         $data = [
 
@@ -82,12 +82,9 @@ class AccountingController extends Controller
     
     
     
-    
-    
-    
-    public function checkDebts( $order_id, $action, $service_id )
+    public function userBalance( $order_id )
     {
-        // Get User Balance
+         // Get User Balance
         $user_id = Order::where('id',$order_id)->first(['user_id']);
         
         if( $user_id === null )
@@ -99,98 +96,110 @@ class AccountingController extends Controller
             return response()->json( "Failed To Get User Balance", 400 );
         
         
-        // Get Penalty Values For Particular Service
+        return $user_balance->balance;
+    }
+    
+    
+    
+    
+    
+    
+    public function getServicePenalties( $service_id )
+    {
+         // Get Penalty Values For Particular Service
         $penalties = DB::table('services')->where( 'id', $service_id )->first(['primary_penalty','day_penalty_percent']);
         
         if( $penalties === null )
             return response()->json("Failed To Get Primary Penalty");
         
+        return [ 'primary_penalty' => $penalties->primary_penalty, 'day_penalty_percent' => $penalties->day_penalty_percent ];
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    public function checkDebts( $order_id, $action, $service_id )
+    {
+        $user_balance = $this->userBalance( $order_id );
+        $penalties = $this->getServicePenalties( $service_id );
+        
         
         if( $action == "s" ):
 
-            $updatedDebts = $this->updateDebts( $order_id, $user_balance->balance );
+            $updatedDebts = $this->updateDebts( $order_id, $user_balance );
             
-            // if not entirely covered add primary penalty
-            if( $updatedDebts['principal_left'] > 0 ):
-                
-                // And Add Primary Penalty
-                //if total_debt_left > 0 primary penalty  = 0
-                // add primary penalty
-                $updatedDebts['primary_penalty'] = $penalties->primary_penalty;
-                $updatedDebts['primary_penalty_payed'] = 0;
-                $updatedDebts['primary_penalty_left'] = $penalties->primary_penalty;
-                $updatedDebts['total_debt'] += $penalties->primary_penalty;
-                $updatedDebts['total_debt_left'] += $penalties->primary_penalty;
-                
-            endif;
+            // if debt is not entirely covered add primary penalty
+
+            if( $updatedDebts['principal_left'] > 0 )
+                return $this->primaryPenlty( $updatedDebts, $penalties['primary_penalty'] );
             
             return $updatedDebts;
             
         endif;
         
-        
-        if( $action == "c" ):
             
+        // check order debts
+        $total_debt = DB::table('accounting')
+                      ->where('order_id',$order_id)
+                      ->orderBy('create_date','desc')
+                      ->first(['total_debt_left']);
         
-            // check order debts
-            $total_debt = DB::table('accounting')
-                          ->where('order_id',$order_id)
-                          ->orderBy('create_date','desc')
-                          ->first(['total_debt_left']);
-        
-            if( $total_debt === null )
-                return response()->json("Failed To Get Total Debt", 400);
-            
-            
-            // if order has debts
-            if( $total_debt->total_debt_left > 0 ):
-                
-                // Calculate Day Penalty
+        if( $total_debt === null )
+            return response()->json("Failed To Get Total Debt", 400);
 
-                $updatedDebts = $this->updateDebts( $order_id, $user_balance->balance );
-                $day_penalty = $updatedDebts['principal_left'] * $penalties->day_penalty_percent / 100;
-                
-                $updatedDebts['day_penalty_total'] = $updatedDebts['day_penalty'] + $day_penalty;
-                $updatedDebts['day_penalty'] = $day_penalty;
-                $updatedDebts['day_penalty_added'] = true;
-                $updatedDebts['day_penalty_payed'] = 0;
-                $updatedDebts['day_penalty_left'] = $day_penalty;
-                $updatedDebts['total_debt'] += $day_penalty;
-                $updatedDebts['total_debt_left'] += $day_penalty;
-            
-                return $updatedDebts;
-                
-            endif;
-                
-            
-            
-            // if total_debt_left is 0 all debts will be 0
-            
-            $updatedDebts = [
-                                "balance_left"          => $user_balance->balance,
-                                "balance_payed"         => 0,
-                                "day_penalty"           => 0,
-                                "day_penalty_payed"     => 0,
-                                "day_penalty_left"      => 0,
-                                "primary_penalty"       => 0,
-                                "primary_penalty_payed" => 0,
-                                "primary_penalty_left"  => 0,
-                                "interest"              => 0,
-                                "interest_payed"        => 0,
-                                "interest_left"         => 0,
-                                "principal"             => 0,
-                                "principal_payed"       => 0,
-                                "principal_left"        => 0,
-                                "total_debt"            => 0,
-                                "total_debt_left"       => 0,
-                                "debt"                  => 0,
-                                "order_id"              => $order_id,
-                            ];
+        
+        if( $total_debt->total_debt_left > 0 ):
 
-            return $updatedDebts;
-            
+           $updatedDebts = $this->updateDebts( $order_id, $user_balance );
+        
+           // Calculate Day Penalty
+           if( $updatedDebts['primary_penalty'] == 0 )
+                return $this->dayPenalty( $updatedDebts, $penalties['day_penalty_percent'] );
+           
+           return $updatedDebts;
+               
         endif;
-
+            
+        return $this->noDebt( $user_balance, $order_id );
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public function noDebt( $user_balance, $order_id )
+    {
+        return [
+                    "balance_left"          => $user_balance,
+                    "balance_payed"         => 0,
+                    "day_penalty"           => 0,
+                    "day_penalty_payed"     => 0,
+                    "day_penalty_left"      => 0,
+                    "primary_penalty"       => 0,
+                    "primary_penalty_payed" => 0,
+                    "primary_penalty_left"  => 0,
+                    "interest"              => 0,
+                    "interest_payed"        => 0,
+                    "interest_left"         => 0,
+                    "principal"             => 0,
+                    "principal_payed"       => 0,
+                    "principal_left"        => 0,
+                    "total_debt"            => 0,
+                    "total_debt_left"       => 0,
+                    "debt"                  => 0,
+                    "order_id"              => $order_id,
+                ];
     }
     
     
@@ -208,6 +217,76 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
+    public function dayPenalty( $updatedDebts, $dayPenaltyPercent )
+    {
+        // Calculate Day Penalty
+        $day_penalty = $updatedDebts['principal_left'] * $dayPenaltyPercent / 100;
+
+        $updatedDebts['day_penalty_total'] = $updatedDebts['day_penalty'] + $day_penalty;
+        $updatedDebts['day_penalty'] = $day_penalty;
+        $updatedDebts['day_penalty_added'] = true;
+        $updatedDebts['day_penalty_payed'] = 0;
+        $updatedDebts['day_penalty_left'] = $day_penalty;
+        $updatedDebts['total_debt'] += $day_penalty;
+        $updatedDebts['total_debt_left'] += $day_penalty;
+        
+        return $updatedDebts;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // to be checked
+    
+    public function primaryPenlty( $updatedDebts, $primaryPenalty )
+    {
+        
+        if( $updatedDebts['total_debt_left'] > 0 ):
+            
+            $updatedDebts['primary_penalty'] = 0;
+            $updatedDebts['primary_penalty_payed'] = 0;
+            $updatedDebts['primary_penalty_left'] = 0;
+        
+            return $updatedDebts;
+        
+        endif;
+            
+        
+        // Add Primary Penalty
+        $updatedDebts['primary_penalty'] = $primaryPenalty;
+        $updatedDebts['primary_penalty_payed'] = 0;
+        $updatedDebts['primary_penalty_left'] = $primaryPenalty;
+        $updatedDebts['total_debt'] += $primaryPenalty;
+        $updatedDebts['total_debt_left'] += $primaryPenalty;
+        
+        return $updatedDebts;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function accounting( $action = 0 )
     {
             // Get Active Orders
