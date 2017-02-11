@@ -20,6 +20,20 @@ class UserController extends Controller
 {
 
     
+    
+    
+    public function test()
+    {
+        return response()->json("dfss", 404);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
     public function register( Request $request )
     {
        

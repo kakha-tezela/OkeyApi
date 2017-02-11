@@ -11,12 +11,12 @@
 */
 
 
+// Account Check
+Route::post('/test', 'UserController@test');
 
 
 // Account Check
 Route::post('/check', 'AccountingController@accountSeederCheck');
-
-
 
 
 // Account Income

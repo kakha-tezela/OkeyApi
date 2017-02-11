@@ -11,18 +11,12 @@ class AccountingController extends Controller
     
     
     
-    
-    
-    
-    
-    
-    
     public function accountSeederCheck()
     {
         $action = "c";
         $pay_date = Carbon::now()->format('Y-m-d');
         
-       // take all active orders and acount them
+       // take all active orders and account them
        
         $order = Order::where('id',6)->first(['id','service_id']);
 
@@ -47,7 +41,7 @@ class AccountingController extends Controller
        
        $updatedDebts = $this->checkDebts( $order->id, $action, $order->service_id );
        
-       return $updatedDebts; 
+       //return $updatedDebts; 
        
         $data = [
 
@@ -65,8 +59,8 @@ class AccountingController extends Controller
              "primary_penalty"        => $updatedDebts['primary_penalty'],
              "primary_penalty_payed"  => $updatedDebts['primary_penalty_payed'],
              "primary_penalty_left"   => $updatedDebts['primary_penalty_left'],
-             "day_penalty"            => 0,
-             "day_penalty_total"      => $updatedDebts['day_penalty'],
+             "day_penalty"            => isset( $updatedDebts['day_penalty_added'] ) ? $updatedDebts['day_penalty'] : 0,
+             "day_penalty_total"      => isset( $updatedDebts['day_penalty_total'] ) ? $updatedDebts['day_penalty_total'] :  $updatedDebts['day_penalty'],
              "day_penalty_payed"      => $updatedDebts['day_penalty_payed'],
              "day_penalty_left"       => $updatedDebts['day_penalty_left'],
              "overdue_cnt"            => 0, // to be completed
@@ -93,21 +87,26 @@ class AccountingController extends Controller
     
     public function checkDebts( $order_id, $action, $service_id )
     {
+        // Get User Balance
+        $user_id = Order::where('id',$order_id)->first(['user_id']);
+        
+        if( $user_id === null )
+            return response()->json( "Failed To Get User Id", 400 );
+        
+        $user_balance = User::where( 'id', $user_id->user_id )->first(['balance']);
+
+        if( $user_balance === null )
+            return response()->json( "Failed To Get User Balance", 400 );
+        
+        
+        // Get Penalty Values For Particular Service
+        $penalties = DB::table('services')->where( 'id', $service_id )->first(['primary_penalty','day_penalty_percent']);
+        
+        if( $penalties === null )
+            return response()->json("Failed To Get Primary Penalty");
+        
         
         if( $action == "s" ):
-
-            // check user balance and update debts
-            $user_id = Order::where('id',$order_id)->first(['user_id']);
-        
-            if( $user_id === null )
-                return response()->json( "Failed To Get User Id", 400 );
-
-            
-            $user_balance = User::where( 'id', $user_id->user_id )->first(['balance']);
-
-            if( $user_balance === null )
-                return response()->json( "Failed To Get User Balance", 400 );
-            
 
             $updatedDebts = $this->updateDebts( $order_id, $user_balance->balance );
             
@@ -115,19 +114,13 @@ class AccountingController extends Controller
             if( $updatedDebts['principal_left'] > 0 ):
                 
                 // And Add Primary Penalty
-                
-                $primaryPenalty = DB::table('services')->where( 'id', $service_id )->first(['primary_penalty']);
-                
-                if( $primaryPenalty === null )
-                    return response()->json("Failed To Get Primary Penalty");
-                
-                
+                //if total_debt_left > 0 primary penalty  = 0
                 // add primary penalty
-                $updatedDebts['primary_penalty'] = $primaryPenalty->primary_penalty;
+                $updatedDebts['primary_penalty'] = $penalties->primary_penalty;
                 $updatedDebts['primary_penalty_payed'] = 0;
-                $updatedDebts['primary_penalty_left'] = $primaryPenalty->primary_penalty;
-                $updatedDebts['total_debt'] += $primaryPenalty->primary_penalty;
-                $updatedDebts['total_debt_left'] += $primaryPenalty->primary_penalty;
+                $updatedDebts['primary_penalty_left'] = $penalties->primary_penalty;
+                $updatedDebts['total_debt'] += $penalties->primary_penalty;
+                $updatedDebts['total_debt_left'] += $penalties->primary_penalty;
                 
             endif;
             
@@ -136,10 +129,10 @@ class AccountingController extends Controller
         endif;
         
         
-        
         if( $action == "c" ):
             
-            // check if order has debt
+        
+            // check order debts
             $total_debt = DB::table('accounting')
                           ->where('order_id',$order_id)
                           ->orderBy('create_date','desc')
@@ -149,37 +142,55 @@ class AccountingController extends Controller
                 return response()->json("Failed To Get Total Debt", 400);
             
             
-            if( $total_debt->total_debt_left > 0 )
-                return $this->updateDebts( $order_id, $user_balance->balance );
+            // if order has debts
+            if( $total_debt->total_debt_left > 0 ):
+                
+                // Calculate Day Penalty
+
+                $updatedDebts = $this->updateDebts( $order_id, $user_balance->balance );
+                $day_penalty = $updatedDebts['principal_left'] * $penalties->day_penalty_percent / 100;
+                
+                $updatedDebts['day_penalty_total'] = $updatedDebts['day_penalty'] + $day_penalty;
+                $updatedDebts['day_penalty'] = $day_penalty;
+                $updatedDebts['day_penalty_added'] = true;
+                $updatedDebts['day_penalty_payed'] = 0;
+                $updatedDebts['day_penalty_left'] = $day_penalty;
+                $updatedDebts['total_debt'] += $day_penalty;
+                $updatedDebts['total_debt_left'] += $day_penalty;
+            
+                return $updatedDebts;
+                
+            endif;
                 
             
-            // all debts will be 0
             
-            return   [
-                    "balance_left"          => $user_balance->balance,
-                    "balance_payed"         => 0,
-                    "day_penalty"           => 0,
-                    "day_penalty_payed"     => 0,
-                    "day_penalty_left"      => 0,
-                    "primary_penalty"       => 0,
-                    "primary_penalty_payed" => 0,
-                    "primary_penalty_left"  => 0,
-                    "interest"              => 0,
-                    "interest_payed"        => 0,
-                    "interest_left"         => 0,
-                    "principal"             => 0,
-                    "principal_payed"       => 0,
-                    "principal_left"        => 0,
-                    "total_debt"            => 0,
-                    "total_debt_left"       => 0,
-                    "debt"                  => 0,
-                    "order_id"              => $order_id,
-                ];
+            // if total_debt_left is 0 all debts will be 0
+            
+            $updatedDebts = [
+                                "balance_left"          => $user_balance->balance,
+                                "balance_payed"         => 0,
+                                "day_penalty"           => 0,
+                                "day_penalty_payed"     => 0,
+                                "day_penalty_left"      => 0,
+                                "primary_penalty"       => 0,
+                                "primary_penalty_payed" => 0,
+                                "primary_penalty_left"  => 0,
+                                "interest"              => 0,
+                                "interest_payed"        => 0,
+                                "interest_left"         => 0,
+                                "principal"             => 0,
+                                "principal_payed"       => 0,
+                                "principal_left"        => 0,
+                                "total_debt"            => 0,
+                                "total_debt_left"       => 0,
+                                "debt"                  => 0,
+                                "order_id"              => $order_id,
+                            ];
+
+            return $updatedDebts;
             
         endif;
-            
-            
-            
+
     }
     
     
