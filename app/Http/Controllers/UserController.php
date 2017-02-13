@@ -109,48 +109,26 @@ class UserController extends Controller
     
     
     
-    public function login( Request $request )
-    {
+    public function login(Request $request){
         if( !$request->has('pid') OR !$request->has('password') )
             return response()->json("Data Is Missing",400);
-        
-        
         $user = User::where( 'personal_id', '=', $request->pid )
                     ->where( 'password', '=', $request->password )
                     ->first();
-        
-        
         if( $user === null )
             return response()->json("User Not Found",404);
-        
         $result = $this->setToken( $user );
-        
-        return response()->json( $result, 200 );
-        
+        return response()->json( $result, 200 );   
     }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    public function checkUser( Request $request )
-    {
-        if( !$request->has( 'pid' ) )
-            return response()->json( "Personal Id Not Provided", 404 );
+    public function checkUser( Request $request ){
+        if(!$request->has('pid'))//IF is not request personal ID
+            return response()->json("Personal Id Not Provided",404);
         
+        $user = User::where('personal_id','=',$request->pid)->first();
         
-        $user = User::where( 'personal_id', '=', $request->pid )->first();
-        
-        if( $user === null )
-            return response()->json( "User Not Found", 404 );
-        
+        if($user === null)
+            return response()->json("User Not Found",404);
         
         return response()->json( "OK", 200 );
     }
