@@ -10,19 +10,59 @@ class OrderController extends Controller
 {
     
     
-    public function orderStatus( Request $request )
+    public function createAnnuitySchedule( Request $request )
     {
-        if( !$request->has( 'order_id' ) OR !$request->has( 'personal_id' ) OR !$request->has( 'status' ) )
-            return response()->json( "Necessary Data Missing", 400 );
-
         
-        Order::where( 'id', '=', $request->order_id )->update([
+        // Get Order Data
+        $orderData = Order::where( 'id',$request->order_id )->first(['start_date','first_pay_date','months','merchant_id','principal_price']);
+        
+        if( $orderData === null )
+            return response()->json( "Failed To Get Order Data", 400 );
+        
+        
+        
+        // get monthly interest from merchant services
+        $monthlyInterest = $this->getMonthlyPercent( $orderData->merchant_id, $orderData->principal_price );
+        
+        // calculate pmt
+        $pmt = $this->pmt( $monthlyInterest, $orderData->months, $orderData->principal_price );
+        $principal = $orderData->principal_price;
+        $debt_left = $orderData->principal_price;
+        
+        
+        for( $i = 0; $i < $orderData->months; $i++ ):
             
-            'status'          => $request->status,
-            'portfel_manager' => $request->personal_id,
-        
-        ]);        
-        
+            $interest = number_format( $debt_left * $monthlyInterest, 2 );
+            $principal = $pmt - $interest;
+            $debt_left -= $principal;
+            
+            $data[] = [
+
+                    'order_id'        => $request->order_id,
+                    'month'           => $i,  
+                    'month_amount'    => $pmt,
+                    'interest'        => $interest, 
+                    'principal'       => $principal,
+                    'debt_left'       => number_format( $debt_left, 0 ), 
+                    'pay_date'        => "",
+                ];
+            
+        endfor;
+         
+        return $data;
+    }
+
+    
+    
+    
+    
+    
+    
+    function pmt( $interest, $months, $loan )
+    {
+       $months = $months;
+       $amount = $interest * -$loan * pow((1 + $interest), $months) / (1 - pow((1 + $interest), $months));
+       return number_format($amount, 2);
     }
     
     
@@ -31,6 +71,41 @@ class OrderController extends Controller
     
     
     
+    
+    public function getMonthlyPercent( $merchant_id, $amount )
+    {
+        $percent = DB::table('merchant_services')->where('merchant_id',$merchant_id)
+                    ->where('min_price', '<=', $amount)        
+                    ->where('max_price', '>', $amount)
+                    ->first(['interest','interest_period']);
+
+
+        if( $percent === null )
+            return response()->json( "Failed To Get Percent Data", 400 );
+        
+        
+        if( $percent->interest_period == "M" )
+            return $percent->interest;
+        elseif( $percent->interest_period == "Y" )
+            return ($percent->interest / 100) / 12;
+        
+    }
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+
+
+
+
+
     public function createSchedule( Request $request )
     {
         
@@ -128,6 +203,23 @@ class OrderController extends Controller
     
     
     
+    
+    
+    
+    public function orderStatus( Request $request )
+    {
+        if( !$request->has( 'order_id' ) OR !$request->has( 'personal_id' ) OR !$request->has( 'status' ) )
+            return response()->json( "Necessary Data Missing", 400 );
+
+        
+        Order::where( 'id', '=', $request->order_id )->update([
+            
+            'status'          => $request->status,
+            'portfel_manager' => $request->personal_id,
+        
+        ]);        
+        
+    }
     
     
     public function extraPay( $start_date, $first_pay_date, $month_interest )
