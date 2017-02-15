@@ -11,6 +11,13 @@
 */
 
 
+// Personal Login
+Route::post('/plogin', 'PersonalController@login');
+
+
+
+
+
 // Account Check
 Route::post('/test', 'UserController@test');
 
