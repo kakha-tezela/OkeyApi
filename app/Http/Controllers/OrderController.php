@@ -20,40 +20,47 @@ class OrderController extends Controller
             return response()->json( "Failed To Get Order Data", 400 );
         
         
-        
         // get monthly interest from merchant services
         $monthlyInterest = $this->getMonthlyPercent( $orderData->merchant_id, $orderData->principal_price );
+        
         
         // calculate pmt
         $pmt = $this->pmt( $monthlyInterest, $orderData->months, $orderData->principal_price );
         $principal = $orderData->principal_price;
-        $debt_left = $orderData->principal_price;
         
-        
-        for( $i = 0; $i < $orderData->months; $i++ ):
-            
-            $interest = number_format( $debt_left * $monthlyInterest, 2 );
-            $principal = $pmt - $interest;
-            $debt_left -= $principal;
-            
-            // check if pay date isnot day off
-            $pay_date = $this->checkPayDate( Carbon::parse($orderData->first_pay_date)->addMonth($i)->format('Y-m-d') );
-            
-            
-            $data[] = [
-
+        $tot = 0;
+        for( $i = 0; $i <= $orderData->months; $i++ ):
+            if( $i == 0 ){
+                $month_amount = 0;
+                $interest = 0;
+                $principal = 0;
+                $debt_left = $orderData->principal_price;
+                $pay_date = $orderData->start_date;
+            }elseif( $i == $orderData->months ){
+                $month_amount = $pmt;
+                $principal = $orderData->principal_price-$tot;
+                $interest = number_format($month_amount - $principal,2);
+                $debt_left = 0;
+                $pay_date = $this->checkPayDate( Carbon::parse($orderData->first_pay_date)->addMonth($i)->format('Y-m-d') );
+            }else{
+                $month_amount = $pmt;
+                $interest = number_format( $debt_left * $monthlyInterest, 2 );
+                $principal = $month_amount - $interest;
+                $debt_left -= $principal;
+                $tot += $principal;
+                $pay_date = $this->checkPayDate( Carbon::parse($orderData->first_pay_date)->addMonth($i)->format('Y-m-d') );
+            }
+                $data[] = [
                     'order_id'        => $request->order_id,
                     'month'           => $i,  
-                    'month_amount'    => $pmt,
+                    'month_amount'    => $month_amount,
                     'interest'        => $interest, 
                     'principal'       => $principal,
-                    'debt_left'       => ( $i == $orderData->months - 1 ) ? (float)number_format( floor( $debt_left ), 2 ) : (float)number_format( $debt_left, 2 ), 
+                    'debt_left'       => $debt_left, 
                     'pay_date'        => $pay_date,
                 ];
             
         endfor;
-        
-        
         if( !DB::table('schedule')->insert($data) )
             return response()->json( "Failed To Add Annuity Schedule", 404 );
 
