@@ -36,6 +36,10 @@ class OrderController extends Controller
             $principal = $pmt - $interest;
             $debt_left -= $principal;
             
+            // check if pay date isnot day off
+            $pay_date = $this->checkPayDate( Carbon::parse($orderData->first_pay_date)->addMonth($i)->format('Y-m-d') );
+            
+            
             $data[] = [
 
                     'order_id'        => $request->order_id,
@@ -43,13 +47,18 @@ class OrderController extends Controller
                     'month_amount'    => $pmt,
                     'interest'        => $interest, 
                     'principal'       => $principal,
-                    'debt_left'       => number_format( $debt_left, 0 ), 
-                    'pay_date'        => "",
+                    'debt_left'       => ( $i == $orderData->months - 1 ) ? (float)number_format( floor( $debt_left ), 2 ) : (float)number_format( $debt_left, 2 ), 
+                    'pay_date'        => $pay_date,
                 ];
             
         endfor;
-         
-        return $data;
+        
+        
+        if( !DB::table('schedule')->insert($data) )
+            return response()->json( "Failed To Add Annuity Schedule", 404 );
+
+        return response()->json( "Schedule Created !", 200 );
+        
     }
 
     
