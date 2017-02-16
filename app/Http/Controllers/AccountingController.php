@@ -238,47 +238,6 @@ class AccountingController extends Controller
 
 
 
-
-    public function accounting( $action = 0 )
-    {
-            // Get Active Orders
-            $active_orders = Order::where( "status", "=", 1 )->get();
-
-            
-            foreach( $active_orders as $order ):
-                
-              $action = $action == 0 ? $this->action( $order->id ) : 'i';  
-            
-//            $data = [
-//                
-//                    "order_id"               => $order->id
-//                    "action"                 => $action,
-//                    "pay_date"               => $this->payDate( $action, $order->id ),
-//                    "debt"                   =>
-//                    "debt_left"              =>
-//                    "principal"              =>
-//                    "principal_payed"        =>
-//                    "principal_left"         =>
-//                    "interest"               =>
-//                    "interest_payed"         =>
-//                    "interest_left"          =>
-//                    "primary_penalty"        =>
-//                    "primary_penalty_payed"  =>
-//                    "primary_penalty_left"   =>
-//                    "day_penalty"            =>
-//                    "day_penalty_total"      =>
-//                    "day_penalty_payed"      =>
-//                    "day_penalty_left"       =>
-//                    "overdue_cnt"            =>
-//                    "total_debt"             =>
-//                    "total_debt_left"        =>
-//                    "income_amount"          =>
-//            ];
-                      
-            endforeach;
-    }
-    
-    
     
     
     

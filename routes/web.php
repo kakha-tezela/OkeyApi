@@ -11,6 +11,13 @@
 */
 
 
+// Personal Login
+Route::post('/plogin', 'PersonalController@login');
+
+
+
+
+
 // Account Check
 Route::post('/test', 'UserController@test');
 
@@ -25,12 +32,16 @@ Route::post('/account', 'AccountingController@emulator');
 
 
 // Create Schedule For User
+Route::post('/order/success', 'OrderController@createSchedule');
+
+
+// Create Annuity Schedule For User
+Route::post('annuity/order/success', 'OrderController@createAnnuitySchedule');
+
+
 Route::post('/orderstatus', 'OrderController@orderStatus');
 
 
-
-// Create Schedule For User
-Route::post('/order/success', 'OrderController@createSchedule');
 
 
 
