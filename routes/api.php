@@ -17,4 +17,9 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:api');
 
+
+// Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');
+
+// User Authorization
+Route::post('/login', 'UserController@login');

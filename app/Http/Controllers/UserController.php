@@ -117,7 +117,7 @@ class UserController extends Controller
                     ->first();
         if( $user === null )
             return response()->json("User Not Found",404);
-        $result = $this->setToken( $user );
+        $result['token'] = $this->setToken( $user );
         return response()->json( $result, 200 );   
     }
     
