@@ -30,7 +30,8 @@ class OrderController extends Controller
         
         $tot = 0;
         for( $i = 0; $i <= $orderData->months; $i++ ):
-            
+
+
             if( $i == 0 ){
                 $month_amount = 0;
                 $interest = 0;
@@ -62,6 +63,8 @@ class OrderController extends Controller
                 ];
             
         endfor;
+
+
 
         if( !DB::table('schedule')->insert($data) )
             return response()->json( "Failed To Add Annuity Schedule", 404 );
