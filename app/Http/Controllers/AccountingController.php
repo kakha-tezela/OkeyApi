@@ -16,7 +16,8 @@ class AccountingController extends Controller
         $action = "c";
         $pay_date = Carbon::now()->format('Y-m-d');
         
-       // take all active orders and account them
+        
+        // take all active orders and loop through them
        
         $order = Order::where('id',6)->first(['id','service_id']);
 
@@ -38,7 +39,9 @@ class AccountingController extends Controller
 
         endforeach;
        
-       
+        
+       // check order debts
+        
        $updatedDebts = $this->checkDebts( $order->id, $action, $order->service_id );
        
        return $updatedDebts; 
@@ -49,7 +52,7 @@ class AccountingController extends Controller
              "action"                 => $action,
              "pay_date"               => $pay_date,
              "debt"                   => $updatedDebts['debt'],
-             "debt_left"              => $updatedDebts['principal_left'] + $updatedDebts['interest_left'], 
+             "debt_left"              => $updatedDebts['debt_left'], 
              "principal"              => $updatedDebts['principal'],
              "principal_payed"        => $updatedDebts['principal_payed'],
              "principal_left"         => $updatedDebts['principal_left'],
@@ -59,8 +62,8 @@ class AccountingController extends Controller
              "primary_penalty"        => $updatedDebts['primary_penalty'],
              "primary_penalty_payed"  => $updatedDebts['primary_penalty_payed'],
              "primary_penalty_left"   => $updatedDebts['primary_penalty_left'],
-             "day_penalty"            => isset( $updatedDebts['day_penalty_added'] ) ? $updatedDebts['day_penalty'] : 0,
-             "day_penalty_total"      => isset( $updatedDebts['day_penalty_total'] ) ? $updatedDebts['day_penalty_total'] :  $updatedDebts['day_penalty'],
+             "day_penalty"            => $updatedDebts['day_penalty'],
+             "day_penalty_total"      => $updatedDebts['day_penalty_total'],
              "day_penalty_payed"      => $updatedDebts['day_penalty_payed'],
              "day_penalty_left"       => $updatedDebts['day_penalty_left'],
              "overdue_cnt"            => 0, // to be completed
@@ -124,27 +127,17 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
+    
     public function checkDebts( $order_id, $action, $service_id )
     {
         $user_balance = $this->userBalance( $order_id );
         $penalties = $this->getServicePenalties( $service_id );
         
-        
-        if( $action == "s" ):
-
-            $updatedDebts = $this->updateDebts( $order_id, $user_balance );
-            
-            // if debt is not entirely covered add primary penalty
-
-            if( $updatedDebts['principal_left'] > 0 )
-                return $this->primaryPenlty( $updatedDebts, $penalties['primary_penalty'] );
-            
-            return $updatedDebts;
-            
-        endif;
-        
-            
-        // check order debts
+        // Check Order Debts Day Before
         $total_debt = DB::table('accounting')
                       ->where('order_id',$order_id)
                       ->orderBy('create_date','desc')
@@ -152,20 +145,31 @@ class AccountingController extends Controller
         
         if( $total_debt === null )
             return response()->json("Failed To Get Total Debt", 400);
-
         
-        if( $total_debt->total_debt_left > 0 ):
-
-           $updatedDebts = $this->updateDebts( $order_id, $user_balance );
         
-           // Calculate Day Penalty
-//           if( $total_debt->total_debt_left > 0 )
-//                return $this->dayPenalty( $updatedDebts, $penalties['day_penalty_percent'] );
-           
-           return $updatedDebts;
-               
-        endif;
+        
+        if( $action == "s" ):
+
+            // Add principal and interest according to schedule
             
+            $updatedDebts = $this->updateDebts( $order_id, $user_balance, $action );
+            
+            // if debt is not entirely covered add primary penalty
+        
+            if( $total_debt->total_debt_left == 0 && $updatedDebts['total_debt_left'] > 0 )
+                return $this->AddPrimaryPenalty( $updatedDebts, $penalties['primary_penalty'] );
+            
+            
+            return $updatedDebts;
+            
+        endif;
+        
+        
+        if( $total_debt->total_debt_left > 0 )
+           return $this->updateDebts( $order_id, $user_balance, $action );
+        
+        
+        // If no debt detected return zeroes   
         return $this->noDebt( $user_balance, $order_id );
         
     }
@@ -179,23 +183,9 @@ class AccountingController extends Controller
     
     
     
-    // to be checked
     
-    public function primaryPenlty( $updatedDebts, $primaryPenalty )
+    public function AddPrimaryPenalty( $updatedDebts, $primaryPenalty )
     {
-        // wina
-        if( $updatedDebts['total_debt_left'] > 0 ):
-            
-            $updatedDebts['primary_penalty'] = 0;
-            $updatedDebts['primary_penalty_payed'] = 0;
-            $updatedDebts['primary_penalty_left'] = 0;
-        
-            return $updatedDebts;
-        
-        endif;
-            
-        
-        // Add Primary Penalty
         $updatedDebts['primary_penalty'] = $primaryPenalty;
         $updatedDebts['primary_penalty_payed'] = 0;
         $updatedDebts['primary_penalty_left'] = $primaryPenalty;
@@ -204,7 +194,6 @@ class AccountingController extends Controller
         
         return $updatedDebts;
     }
-
 
 
 
@@ -369,6 +358,9 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
     public function incomeSeeder( $data )
     {
         $row = [
@@ -391,11 +383,14 @@ class AccountingController extends Controller
         
        
         // Update User balance And Log Operation In Balance History Table
+        
         $balance = $this->userBalanceUpdater( $data['user_id'], $data['amount'], true );
         $this->balanceLogger( $data['user_id'], "in", $data['amount'], $balance );
         
         
+        
         // Check total_debt_left
+        
         $total_debt = DB::table('accounting')->where( 'order_id', '=', $data['order_id'] )
                       ->orderBy( 'create_date', 'desc' )
                       ->first(['total_debt_left']);
@@ -408,13 +403,16 @@ class AccountingController extends Controller
         if( $total_debt->total_debt_left > 0 ):
             
             // Update User Debts
+            
             $updatedDebts = $this->updateDebts( $data['order_id'], $balance );
             
             // Update User balance And Log Operation In Balance History Table
+            
             $this->userBalanceUpdater( $data['user_id'], $updatedDebts['balance_left'], false );
             $this->balanceLogger( $data['user_id'], "out", $updatedDebts['balance_payed'], $updatedDebts['balance_left'] );
 
             // Seed In Account
+            
             return $this->accountSeederIncome( $updatedDebts, $income_date->date );
             
         endif;
@@ -428,8 +426,16 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
      
-    public function updateDebts( $order_id, $amount )
+    public function updateDebts( $order_id, $amount, $action = null )
     {
         
         // check debts in accounts table day before
@@ -444,23 +450,51 @@ class AccountingController extends Controller
 
         
         // Declare Variables
-        $balance_payed = 0;
-        $principal_left = $allDebts->principal_left;
+        
+        $principal = $allDebts->principal_left;
         $principal_payed = 0;
+        $principal_left = $allDebts->principal_left;
+        $interest = $allDebts->interest_left;
         $interest_payed = 0;
         $interest_left = $allDebts->interest_left;
         $primary_penalty_payed = 0;
         $primary_penalty_left = $allDebts->primary_penalty_left;
         $day_penalty_payed = 0;
         $day_penalty_left = $allDebts->day_penalty_left;
+        $balance_payed = 0;
         
         
-        $updatedDayPenalty = $this->deayPenaltyCalc( $amount, $day_penalty_left, $day_penalty_payed, $balance_payed, $allDebts->day_penalty_left  );
+        
+        // if schedule increase principal and interest 
+        
+        if( $action == "s" ):
+             $monthAmount = $this->monthAmount( $order_id, Carbon::now()->format( 'Y-m-d' ) );
+             $principal += $monthAmount['principal'];
+             $principal_left += $monthAmount['principal']; 
+             $interest += $monthAmount['interest'];
+             $interest_left += $monthAmount['interest'];
+        endif;
+        
+        
+        
+        
+        
+        // check if balance > 0
+        
+        // Update Day Penalty
+        
+        $updatedDayPenalty = $this->deayPenaltyCalc( $amount, $day_penalty_left, $day_penalty_payed, $balance_payed, $allDebts->day_penalty_left, $action, $allDebts->debt_left, $order_id );
+        $day_penalty = $updatedDayPenalty['day_penalty'];
         $day_penalty_payed = $updatedDayPenalty['day_penalty_payed'];
         $day_penalty_left = $updatedDayPenalty['day_penalty_left'];
+        $day_penalty_total = $updatedDayPenalty['day_penalty_total'];
         $balance_payed = $updatedDayPenalty['balance_payed'];
         $amount = $updatedDayPenalty['amount'];
+            
         
+        
+        
+        // Update Primary Penalty
         
         if( $amount > 0 ):
             
@@ -473,9 +507,13 @@ class AccountingController extends Controller
         endif;
 
         
+        
+        // Update Interest
+        
         if( $amount > 0 ):
             
-            $updatedInterest = $this->interestCalc( $updatedPrimaryPenalty['amount'], $interest_left, $interest_payed, $updatedPrimaryPenalty['balance_payed'], $allDebts->interest_left );
+            $updatedInterest = $this->interestCalc( $updatedPrimaryPenalty['amount'], $interest_left, $interest_payed, $updatedPrimaryPenalty['balance_payed'], $interest );
+            $interest = $updatedInterest['interest'];
             $interest_payed = $updatedInterest['interest_payed'];
             $interest_left = $updatedInterest['interest_left'];
             $balance_payed = $updatedInterest['balance_payed'];
@@ -484,9 +522,13 @@ class AccountingController extends Controller
         endif;
         
         
-        if( $updatedInterest['amount'] > 0 ):
+        
+        // Update Principal
+        
+        if( $amount > 0 ):
             
-            $updatedPrincipal = $this->principalCalc( $updatedInterest['amount'], $principal_left, $principal_payed, $updatedInterest['balance_payed'], $allDebts->principal_left );
+            $updatedPrincipal = $this->principalCalc( $updatedInterest['amount'], $principal_left, $principal_payed, $updatedInterest['balance_payed'], $principal );
+            $principal = $updatedPrincipal['principal'];
             $principal_payed = $updatedPrincipal['principal_payed'];
             $principal_left = $updatedPrincipal['principal_left'];
             $balance_payed = $updatedPrincipal['balance_payed'];
@@ -498,7 +540,7 @@ class AccountingController extends Controller
         
         // Define Total Debt And Total Debt Left
         
-        $totalDebt = $allDebts->day_penalty_left + $allDebts->primary_penalty_left + $allDebts->interest_left + $allDebts->principal_left;
+        $totalDebt = $allDebts->day_penalty_left + $allDebts->primary_penalty_left + $interest + $principal + $day_penalty;
         $totalDebtLeft = $day_penalty_left + $primary_penalty_left + $interest_left + $principal_left;
         
         
@@ -509,21 +551,23 @@ class AccountingController extends Controller
             
             'balance_left'           => $amount,
             'balance_payed'          => $balance_payed,
-            'day_penalty'            => $allDebts->day_penalty_left,
+            'day_penalty'            => $day_penalty,
+            'day_penalty_total'      => $day_penalty_total,
             'day_penalty_payed'      => $day_penalty_payed,
             'day_penalty_left'       => $day_penalty_left,
             'primary_penalty'        => $allDebts->primary_penalty_left,
             'primary_penalty_payed'  => $primary_penalty_payed, 
             'primary_penalty_left'   => $primary_penalty_left,
-            'interest'               => $allDebts->interest_left,
+            'interest'               => $interest,
             'interest_payed'         => $interest_payed,
             'interest_left'          => $interest_left,
-            'principal'              => $allDebts->principal_left,
+            'principal'              => $principal,
             'principal_payed'        => $principal_payed, 
             'principal_left'         => $principal_left,
             'total_debt'             => $totalDebt,
             'total_debt_left'        => $totalDebtLeft,
-            'debt'                   => $allDebts->debt_left,
+            'debt'                   => $interest + $principal, // to be checked
+            'debt_left'              => $principal_left + $interest_left,
             'order_id'               => $order_id,
         ];
         
@@ -533,38 +577,63 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
+    
     // Penalty Calculation Functions
     
-    public function deayPenaltyCalc( $amount, $day_penalty_left, $day_penalty_payed, $balance_payed, $day_before_penalty  )
+    public function deayPenaltyCalc( $amount, $day_penalty_left, $day_penalty_payed, $balance_payed, $day_before_penalty, $action, $debt_left, $order_id  )
     {
+        $day_penalty = 0;
         
-         // Update Day Penalty
-        if( $amount >= $day_before_penalty )
-        {
-            // update day penalty here
-            $amount -= $day_before_penalty;
-            $day_penalty_left = 0;
-            $day_penalty_payed = $day_before_penalty;
-            $balance_payed += $day_before_penalty;
+        if( $action == "c" || $action == "s" && $debt_left > 0 ):
             
+            // get day penalty percent by service id
+            $service_id = Order::where( 'id', $order_id )->first(['service_id']);
+            
+            if( $service_id === null )
+                return response()->json( "Failed TO Get Service Id", 400 );
+            
+            
+            // Calculate Day Penalty
+            $dayPenaltyPercent = $this->getServicePenalties( $service_id->service_id );
+            $day_penalty = $debt_left * $dayPenaltyPercent['day_penalty_percent'] / 100;
+
+        endif;
+        
+        
+        
+        if( $amount >= ( $day_before_penalty + $day_penalty ) )
+        {
+            $amount -= ( $day_before_penalty + $day_penalty );
+            $day_penalty_left = 0;
+            $day_penalty_payed = ( $day_before_penalty + $day_penalty );
+            $balance_payed += ( $day_before_penalty + $day_penalty );
         }
         else
         {
-            // update day penalty here
-            $day_penalty_left = $day_before_penalty - $amount;
+            $day_penalty_left = ( $day_before_penalty + $day_penalty ) - $amount;
             $day_penalty_payed = $amount;
             $balance_payed += $amount;
             $amount = 0;
         }
         
         
-        
         return [
-                    'amount'            => $amount,
-                    'day_penalty_left'  => $day_penalty_left,
-                    'day_penalty_payed' => $day_penalty_payed,
-                    'balance_payed'     => $balance_payed,
+                    'amount'             => $amount,
+                    'day_penalty'        => $day_penalty,
+                    'day_penalty_total'  => $day_before_penalty + $day_penalty,
+                    'day_penalty_left'   => $day_penalty_left,
+                    'day_penalty_payed'  => $day_penalty_payed,
+                    'balance_payed'      => $balance_payed,
                ];
         
     }
@@ -578,9 +647,12 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
     public function primaryPenaltyCalc( $amount, $primary_penalty_left, $primary_penalty_payed, $balance_payed, $day_before_penalty )
     {
-         
+        
         if( $amount >= $day_before_penalty )
         {
             $amount -= $day_before_penalty;
@@ -614,6 +686,11 @@ class AccountingController extends Controller
     
     
     
+    
+    
+    
+    
+    
     public function interestCalc( $amount, $interest_left, $interest_payed, $balance_payed, $day_before_penalty )
     {
             
@@ -635,6 +712,7 @@ class AccountingController extends Controller
         
         return [
                    'amount'           => $amount,
+                   'interest'         => $day_before_penalty,
                    'interest_left'    => $interest_left,
                    'interest_payed'   => $interest_payed,
                    'balance_payed'    => $balance_payed,
@@ -649,9 +727,30 @@ class AccountingController extends Controller
     
     
     
+    public function monthAmount( $order_id, $pay_date )
+    {
+        $monthAmounts = DB::table('schedule')->where('order_id', $order_id )->where( 'pay_date', $pay_date )->first(['principal','interest']);
+        
+        if( $monthAmounts === null )
+            return response()->json( "Failed To Get Month Amount", 400 );
+        
+        return [ "principal" => $monthAmounts->principal, "interest" => $monthAmounts->interest ];
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
     public function principalCalc( $amount, $principal_left, $principal_payed, $balance_payed, $day_before_penalty )
     {
-            
+        
         if( $amount >= $day_before_penalty )
         {
             $amount -= $day_before_penalty;
@@ -670,6 +769,7 @@ class AccountingController extends Controller
         
         return  [
                    'amount'           => $amount,
+                   'principal'        => $day_before_penalty,
                    'principal_left'   => $principal_left,
                    'principal_payed'  => $principal_payed,
                    'balance_payed'    => $balance_payed,
