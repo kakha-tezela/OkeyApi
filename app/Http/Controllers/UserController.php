@@ -132,19 +132,7 @@ class UserController extends Controller
         
         return response()->json( "OK", 200 );
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+ 
     
     public function userData( Request $request )
     {
