@@ -61,7 +61,7 @@ class PersonalController extends Controller
         $output = [];
 
         foreach ( $permissions as $row )
-            $output[$row->groupName][$row->tableName][] = $row->permission;
+            $output[$row->tableName][] = $row->permission;
 
 
         return $output;
