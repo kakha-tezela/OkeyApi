@@ -17,4 +17,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:api');
 
+
+//====== User Operations ======
+
+Route::post('/users', 'UserController@index');
+
 Route::post('/checkuser', 'UserController@checkUser');
+
+//====== End OF User Operations ======

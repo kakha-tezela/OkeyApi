@@ -20,20 +20,82 @@ class UserController extends Controller
 {
 
     
-    
-    
-    public function test()
+    public function index()
     {
-        return response()->json("dfss", 404);
+        $values = [
+
+            "users.firstname",
+            "users.lastname",
+            "users.birth_date",
+            "users.phys_address",
+            "users.phone",
+            "users.pid_number",
+            "users.personal_id",
+            "users.email",
+            "users.company_id",
+            "users.politic_person",
+            "users.work_place",
+            "users.balance",
+            "users.status",
+            "cities.title_geo as city",
+            "genders.title as gender",
+            "orders.id as orderId",
+        ];
+
+
+        $data = DB::table('users')
+                ->leftJoin('cities', 'users.city_id', '=', 'cities.id')
+                ->leftJoin('genders', 'users.gender', '=', 'genders.id')
+                ->leftJoin('orders', 'orders.user_id', '=', 'users.id')
+                ->get( $values );
+
+
+        if( count( $data ) == 0 )
+            return response()->json("No User Found !", 404 );
+
+        $output = [];
+
+        foreach( $data as $row ):
+
+            $output["firstname"] = $row->firstname;
+            $output["lastname"] = $row->lastname;
+            $output["birth_date"] = $row->birth_date;
+            $output["phys_address"] = $row->phys_address;
+            $output["pid_number"] = $row->pid_number;
+            $output["personal_id"] = $row->personal_id;
+            $output["email"] = $row->email;
+            $output["company_id"] = $row->company_id;
+            $output["politic_person"] = $row->politic_person;
+            $output["work_place"] = $row->work_place;
+            $output["balance"] = $row->balance;
+            $output["status"] = $row->status;
+
+            $output["orders"][] = $row->orderId;
+
+        endforeach;
+
+        return response()->json( $output, 200 );
+
     }
     
     
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function register( Request $request )
     {
        
@@ -109,30 +171,51 @@ class UserController extends Controller
     
     
     
-    public function login(Request $request){
+    public function login(Request $request)
+    {
         if( !$request->has('pid') OR !$request->has('password') )
             return response()->json("Data Is Missing",400);
+    
         $user = User::where( 'personal_id', '=', $request->pid )
                     ->where( 'password', '=', $request->password )
                     ->first();
+    
         if( $user === null )
             return response()->json("User Not Found",404);
+    
         $result = $this->setToken( $user );
+    
         return response()->json( $result, 200 );   
     }
+
+
+
+
+
+
+
+
+
+
     
-    public function checkUser( Request $request ){
-        if(!$request->has('pid'))//IF is not request personal ID
+    public function checkUser( Request $request )
+    {
+        if( !$request->has('pid') )
             return response()->json("Personal Id Not Provided",404);
         
+    
         $user = User::where('personal_id','=',$request->pid)->first();
         
         if($user === null)
             return response()->json("User Not Found",404);
-        
+    
         return response()->json( "OK", 200 );
     }
  
+
+
+
+
     
     public function userData( Request $request )
     {
