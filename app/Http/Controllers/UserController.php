@@ -176,18 +176,7 @@ class UserController extends Controller
     {
         if( !$request->has('pid') OR !$request->has('password') )
             return response()->json("Data Is Missing",400);
-<<<<<<< HEAD
-    
-        $user = User::where( 'personal_id', '=', $request->pid )
-                    ->where( 'password', '=', $request->password )
-                    ->first();
-    
-        if( $user === null )
-            return response()->json("User Not Found",404);
-    
-        $result = $this->setToken( $user );
-    
-=======
+
         // Get password
         $password = User::where('personal_id', $request->pid )
             ->first(['password']);
@@ -204,7 +193,6 @@ class UserController extends Controller
 
         $result['token'] = $this->setToken($user);
         $result['user'] = $user;
->>>>>>> ea78ee1abc934fa9e1c5e01e807c11d75563c816
         return response()->json( $result, 200 );   
     }
 
