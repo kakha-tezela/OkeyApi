@@ -24,7 +24,7 @@ Route::group(['middleware' => 'AddUpdate'], function () {
 	Route::post('/user/update', 'UserController@update');
 
 	// Add User
-	Route::post('/user/add', 'UserController@add')
+	Route::post('/user/add', 'UserController@add');
 
 });
 
