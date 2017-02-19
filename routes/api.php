@@ -20,8 +20,19 @@ Route::get('/user', function (Request $request) {
 
 //====== User Operations ======
 
+// Get All Users
 Route::post('/users', 'UserController@index');
 
+
+// Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');
 
+
+// User Authorization
+Route::post('/login', 'UserController@login');
+
+
+
 //====== End OF User Operations ======
+
+
