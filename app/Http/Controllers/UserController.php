@@ -20,62 +20,144 @@ use Illuminate\Support\Facades\DB;
 class UserController extends Controller
 {
 
-    
-    public function index()
+
+
+     public function add( Request $request )
     {
+        
+        // Before Update Log History In Users History Table
+
+        $user = new User();
+        $user->person_status    =  $request->person_status;
+        $user->firstname        =  $request->firstname;
+        $user->lastname         =  $request->lastname;
+        $user->citizenship      =  $request->citizenship;
+        $user->gender           =  $request->gender;
+        $user->birth_date       =  $request->birth_date;
+        $user->reg_address      =  $request->reg_address;
+        $user->phys_address     =  $request->phys_address;
+        $user->city_id          =  $request->city_id;
+        $user->phone            =  $request->phone;
+        $user->pid_number       =  $request->pid_number;
+        $user->personal_id      =  $request->personal_id;
+        $user->email            =  $request->email;
+        $user->username         =  $request->username;
+        $user->password         =  $request->password;
+        $user->company_id       =  $request->company_id;
+        $user->social_id        =  $request->social_id;
+        $user->politic_person   =  $request->politic_person;
+        $user->work_place       =  $request->work_place;
+        $user->salary_id        =  $request->salary_id;
+        $user->balance          =  $request->balance;
+        $user->status           =  $request->status;
+
+
+        if( !$user->save() )
+            return response()->json("Operation Failed !", 400 );
+
+
+        return response()->json("Operation Succesfull !", 200 );
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    public function update( Request $request )
+    {
+        if( !$request->has("user_id") )
+            return response()->json( "User Id Not Provided !", 400 );
+
+
+        // Before Update Log History In Users History Table
+
+        $update = User::where( 'id', $request->user_id )->update([
+            
+            'person_status'    =>  $request->person_status,
+            'firstname'        =>  $request->firstname,
+            'lastname'         =>  $request->lastname,
+            'citizenship'      =>  $request->citizenship,
+            'gender'           =>  $request->gender,
+            'birth_date'       =>  $request->birth_date,
+            'reg_address'      =>  $request->reg_address,
+            'phys_address'     =>  $request->phys_address,
+            'city_id'          =>  $request->city_id,
+            'phone'            =>  $request->phone,
+            'pid_number'       =>  $request->pid_number,
+            'personal_id'      =>  $request->personal_id,
+            'email'            =>  $request->email,
+            'username'         =>  $request->username,
+            'password'         =>  $request->password,
+            'company_id'       =>  $request->company_id,
+            'social_id'        =>  $request->social_id,
+            'politic_person'   =>  $request->politic_person,
+            'work_place'       =>  $request->work_place,
+            'salary_id'        =>  $request->salary_id,
+            'balance'          =>  $request->balance,
+            'status'           =>  $request->status,
+
+        ]);
+
+
+        if( !$update )
+            return response()->json("Operation Failed !", 400 );
+
+
+        return response()->json("Operation Succesfull !", 200 );
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function index( Request $request )
+    {
+
+        if( !$request->has("offset"))
+            return response()->json("Offset Not Provided !", 400 ); 
+
+
         $values = [
 
-            "users.firstname",
-            "users.lastname",
-            "users.birth_date",
-            "users.phys_address",
-            "users.phone",
-            "users.pid_number",
-            "users.personal_id",
-            "users.email",
-            "users.company_id",
-            "users.politic_person",
-            "users.work_place",
-            "users.balance",
-            "users.status",
+            "users.*",
             "cities.title_geo as city",
             "genders.title as gender",
-            "orders.id as orderId",
         ];
 
+
+        $limit = 25;
 
         $data = DB::table('users')
                 ->leftJoin('cities', 'users.city_id', '=', 'cities.id')
                 ->leftJoin('genders', 'users.gender', '=', 'genders.id')
-                ->leftJoin('orders', 'orders.user_id', '=', 'users.id')
-                ->get( $values );
+                ->offset( $request->offset )
+                ->limit( $limit )
+                ->get( ["users.*", "cities.title_geo as city", "genders.title as gender"] );
 
 
         if( count( $data ) == 0 )
             return response()->json("No User Found !", 404 );
 
-        $output = [];
 
-        foreach( $data as $row ):
-
-            $output["firstname"] = $row->firstname;
-            $output["lastname"] = $row->lastname;
-            $output["birth_date"] = $row->birth_date;
-            $output["phys_address"] = $row->phys_address;
-            $output["pid_number"] = $row->pid_number;
-            $output["personal_id"] = $row->personal_id;
-            $output["email"] = $row->email;
-            $output["company_id"] = $row->company_id;
-            $output["politic_person"] = $row->politic_person;
-            $output["work_place"] = $row->work_place;
-            $output["balance"] = $row->balance;
-            $output["status"] = $row->status;
-
-            $output["orders"][] = $row->orderId;
-
-        endforeach;
-
-        return response()->json( $output, 200 );
+        return response()->json( $data, 200 );
 
     }
     
@@ -176,7 +258,6 @@ class UserController extends Controller
     {
         if( !$request->has('pid') OR !$request->has('password') )
             return response()->json("Data Is Missing",400);
-<<<<<<< HEAD
     
         $user = User::where( 'personal_id', '=', $request->pid )
                     ->where( 'password', '=', $request->password )
@@ -187,13 +268,15 @@ class UserController extends Controller
     
         $result = $this->setToken( $user );
     
-=======
         // Get password
         $password = User::where('personal_id', $request->pid )
             ->first(['password']);
+
          if( $password === null )
             return response()->json("User Not Found",404);
+
         if(Hash::check($request->password, $password->password)){
+
         // Check Password
         $user = User::select('id','person_status','firstname','lastname','citizenship','gender','birth_date','reg_address','phys_address','city_id','phone','pid_number','personal_id','email','username','company_id','social_id','politic_person','work_place','salary_id')
                 ->where('personal_id','=',$request->pid)
@@ -204,7 +287,7 @@ class UserController extends Controller
 
         $result['token'] = $this->setToken($user);
         $result['user'] = $user;
->>>>>>> ea78ee1abc934fa9e1c5e01e807c11d75563c816
+
         return response()->json( $result, 200 );   
     }
 

@@ -13,12 +13,21 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:api');
 
 
 //====== User Operations ======
+
+
+Route::group(['middleware' => 'AddUpdate'], function () {
+
+	// Update User
+	Route::post('/user/update', 'UserController@update');
+
+	// Add User
+	Route::post('/user/add', 'UserController@add')
+
+});
+
 
 // Get All Users
 Route::post('/users', 'UserController@index');
@@ -36,3 +45,25 @@ Route::post('/login', 'UserController@login');
 //====== End OF User Operations ======
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:api');
