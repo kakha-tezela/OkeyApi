@@ -55,6 +55,8 @@ Route::post('/cities', 'UserController@getCities');
 
 Route::post('/countries', 'UserController@getCountries');
 
+Route::post('/socialstatuses', 'UserController@getSocialStatuses');
+
 
 
 

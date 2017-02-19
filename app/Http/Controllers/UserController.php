@@ -127,11 +127,17 @@ class UserController extends Controller
 
 
 
+
     public function getCountries()
     {
         return DB::table('countries')->get();
     }
-
+    
+    
+    public function getSocialStatuses()
+    {
+        return DB::table('social_statuses')->get();
+    }
 
 
 
@@ -349,11 +355,7 @@ class UserController extends Controller
         
         return response()->json( $user, 200 );
     }
-    
-    
-    
-    
-    
+
     
     
     // Check Token
