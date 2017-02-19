@@ -51,8 +51,9 @@ Route::post('/login', 'UserController@login');
 
 
 
+Route::post('/cities', 'UserController@getCities');
 
-
+Route::post('/countries', 'UserController@getCountries');
 
 
 

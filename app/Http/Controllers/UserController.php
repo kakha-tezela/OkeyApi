@@ -120,7 +120,17 @@ class UserController extends Controller
 
 
 
+    public function getCities()
+    {
+        return DB::table('cities')->get();
+    }
 
+
+
+    public function getCountries()
+    {
+        return DB::table('countries')->get();
+    }
 
 
 
@@ -131,15 +141,16 @@ class UserController extends Controller
     public function index( Request $request )
     {
 
-        if( !$request->has("offset"))
-            return response()->json("Offset Not Provided !", 400 ); 
+        if( !$request->has("offset") || !$request->has("limit"))
+            return response()->json("Limit Or Offset Not Provided !", 400 ); 
 
 
         $values = [
 
-            "users.*",
-            "cities.title_geo as city",
+            "users.*", "cities.title_geo as city",
             "genders.title as gender",
+            "social_statuses.title as socialStatus",
+            "salary_range.salary_range as salaryRange"
         ];
 
 
@@ -148,9 +159,11 @@ class UserController extends Controller
         $data = DB::table('users')
                 ->leftJoin('cities', 'users.city_id', '=', 'cities.id')
                 ->leftJoin('genders', 'users.gender', '=', 'genders.id')
+                ->leftJoin('social_statuses', 'users.social_id', '=', 'social_statuses.id')
+                ->leftJoin('salary_range', 'users.salary_id', '=', 'salary_range.id')
                 ->offset( $request->offset )
-                ->limit( $limit )
-                ->get( ["users.*", "cities.title_geo as city", "genders.title as gender"] );
+                ->limit( $request->limit )
+                ->get( $values );
 
 
         if( count( $data ) == 0 )
