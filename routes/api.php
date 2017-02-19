@@ -32,6 +32,9 @@ Route::group(['middleware' => 'AddUpdate'], function () {
 // Get All Users
 Route::post('/users', 'UserController@index');
 
+// Show One User
+Route::post('/user/show', 'UserController@show');
+
 
 // Check User With PID
 Route::post('/checkuser', 'UserController@checkUser');

@@ -166,7 +166,20 @@ class UserController extends Controller
 
 
 
+    public function show( Request $request )
+    {
+        if( !$request->has('user_id') )
+            return response()->json("User ID Not Provided !", 400 ); 
 
+
+        $user = User::where( 'id', $request->user_id )->first();
+
+        if( $user === null )
+             return response()->json("User Not Found !", 404 );
+
+
+         return response()->json( $user, 404 ); 
+    }
 
 
 
