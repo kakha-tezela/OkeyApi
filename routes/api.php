@@ -44,6 +44,10 @@ Route::post('/checkuser', 'UserController@checkUser');
 Route::post('/login', 'UserController@login');
 
 
+// Get invoice Information
+Route::post('/invoice', 'InvoiceController@getInvoiceInfo');
+Route::post('/invoiceproducts', 'InvoiceController@getInvoiceProducts');
+
 
 //====== End OF User Operations ======
 
@@ -56,6 +60,7 @@ Route::post('/cities', 'UserController@getCities');
 Route::post('/countries', 'UserController@getCountries');
 
 Route::post('/socialstatuses', 'UserController@getSocialStatuses');
+Route::post('/salaryranges', 'UserController@getSalaryRanges');
 
 
 

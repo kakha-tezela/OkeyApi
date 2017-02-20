@@ -138,6 +138,10 @@ class UserController extends Controller
     {
         return DB::table('social_statuses')->get();
     }
+    public function getSalaryRanges()
+    {
+        return DB::table('salary_range')->get();
+    }
 
 
 
@@ -332,7 +336,7 @@ class UserController extends Controller
         $user = User::where('personal_id','=',$request->pid)->first();
         
         if($user === null)
-            return response()->json("User Not Found",404);
+            return response()->json("User Not Found",200);
     
         return response()->json( "OK", 200 );
     }
