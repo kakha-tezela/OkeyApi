@@ -13,20 +13,17 @@ use Illuminate\Http\Request;
 |
 */
 
-
-
 //====== User Operations ======
 
+// User Search
+Route::post('/user/search', 'UserController@search');
 
-Route::group(['middleware' => 'AddUpdate'], function () {
 
-	// Update User
-	Route::post('/user/update', 'UserController@update');
 
-	// Add User
-	Route::post('/user/add', 'UserController@add');
+// Update User
+Route::post('/user/update', 'UserController@update');
 
-});
+Route::post('/user/add', 'UserController@add')->middleware("Cors");
 
 
 // Get All Users
@@ -43,24 +40,32 @@ Route::post('/checkuser', 'UserController@checkUser');
 // User Authorization
 Route::post('/login', 'UserController@login');
 
-
-// Get invoice Information
-Route::post('/invoice', 'InvoiceController@getInvoiceInfo');
-Route::post('/invoiceproducts', 'InvoiceController@getInvoiceProducts');
-
-
 //====== End OF User Operations ======
 
 
 
 
 
+
+
+
+
+// Get invoice Information
+Route::post('/invoice', 'InvoiceController@getInvoiceInfo');
+
+Route::post('/invoiceproducts', 'InvoiceController@getInvoiceProducts');
+
+Route::post('/plogin', 'PersonalController@login');
+
 Route::post('/cities', 'UserController@getCities');
 
 Route::post('/countries', 'UserController@getCountries');
 
 Route::post('/socialstatuses', 'UserController@getSocialStatuses');
+
 Route::post('/salaryranges', 'UserController@getSalaryRanges');
+
+Route::post('/companies', 'UserController@getCompanies');
 
 
 

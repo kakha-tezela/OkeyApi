@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\User;
+use App\Order;
 use Carbon\Carbon;
 use Lcobucci\JWT\Configuration;
 use JWTAuth;
@@ -16,108 +17,95 @@ use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\DB;
 
 
+//if( !isset($_GET["fields"]) )
+//{
+//    $fields = "*";
+//}
+//else
+//{
+//     $fields = $_GET["fields"];
+//}
+//if( !isset($_GET["where"]) )
+//{
+//     $where = "";
+//}
+//else 
+//{
+//     $where = str_replace("-","=",$_GET["where"]);
+//}
+//
+//else
+//{
+//    $sql ='SELECT $values FROM users '.$where.' 
+//
+//
+//}
+
+
+
+
 
 class UserController extends Controller
 {
 
-
-
-     public function add( Request $request )
+    public function search( Request $request )
     {
+        $values = [
+            "users.*",
+            "orders.id",
+        ];
         
-        // Before Update Log History In Users History Table
-
-        $user = new User();
-        $user->person_status    =  $request->person_status;
-        $user->firstname        =  $request->firstname;
-        $user->lastname         =  $request->lastname;
-        $user->citizenship      =  $request->citizenship;
-        $user->gender           =  $request->gender;
-        $user->birth_date       =  $request->birth_date;
-        $user->reg_address      =  $request->reg_address;
-        $user->phys_address     =  $request->phys_address;
-        $user->city_id          =  $request->city_id;
-        $user->phone            =  $request->phone;
-        $user->pid_number       =  $request->pid_number;
-        $user->personal_id      =  $request->personal_id;
-        $user->email            =  $request->email;
-        $user->username         =  $request->username;
-        $user->password         =  $request->password;
-        $user->company_id       =  $request->company_id;
-        $user->social_id        =  $request->social_id;
-        $user->politic_person   =  $request->politic_person;
-        $user->work_place       =  $request->work_place;
-        $user->salary_id        =  $request->salary_id;
-        $user->balance          =  $request->balance;
-        $user->status           =  $request->status;
-
-
-        if( !$user->save() )
-            return response()->json("Operation Failed !", 400 );
-
-
-        return response()->json("Operation Succesfull !", 200 );
-
+        $data = DB::table('orders')
+                ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+                ->get( $values );
+        
+        if( $data->count() > 0 )
+            return response()->json($data,200);
+        
+        
+        return response()->json( "", 400 );
+        
     }
 
+    
+    
+    
+    
 
 
-
-
-
-
-
-
+    public function add( Request $request )
+    {
+        User::create( $request->all() );
+    }
 
 
 
     
     public function update( Request $request )
     {
-        if( !$request->has("user_id") )
-            return response()->json( "User Id Not Provided !", 400 );
-
-
         // Before Update Log History In Users History Table
-
-        $update = User::where( 'id', $request->user_id )->update([
-            
-            'person_status'    =>  $request->person_status,
-            'firstname'        =>  $request->firstname,
-            'lastname'         =>  $request->lastname,
-            'citizenship'      =>  $request->citizenship,
-            'gender'           =>  $request->gender,
-            'birth_date'       =>  $request->birth_date,
-            'reg_address'      =>  $request->reg_address,
-            'phys_address'     =>  $request->phys_address,
-            'city_id'          =>  $request->city_id,
-            'phone'            =>  $request->phone,
-            'pid_number'       =>  $request->pid_number,
-            'personal_id'      =>  $request->personal_id,
-            'email'            =>  $request->email,
-            'username'         =>  $request->username,
-            'password'         =>  $request->password,
-            'company_id'       =>  $request->company_id,
-            'social_id'        =>  $request->social_id,
-            'politic_person'   =>  $request->politic_person,
-            'work_place'       =>  $request->work_place,
-            'salary_id'        =>  $request->salary_id,
-            'balance'          =>  $request->balance,
-            'status'           =>  $request->status,
-
-        ]);
-
-
-        if( !$update )
-            return response()->json("Operation Failed !", 400 );
-
-
+        
+        User::where('id', $request->id )->update( $request->except("id") );
+        
         return response()->json("Operation Succesfull !", 200 );
-
     }
 
+    
+    
+    
+    
+    
+    
 
 
+
+    public function getCompanies()
+    {
+        return DB::table('client_companies')->get(["id","name"]);
+    }
+    
+    
+    
 
 
     public function getCities()
@@ -127,6 +115,8 @@ class UserController extends Controller
 
 
 
+    
+    
 
     public function getCountries()
     {
@@ -134,15 +124,22 @@ class UserController extends Controller
     }
     
     
+    
+    
     public function getSocialStatuses()
     {
         return DB::table('social_statuses')->get();
     }
+    
+    
+    
     public function getSalaryRanges()
     {
         return DB::table('salary_range')->get();
     }
 
+    
+    
 
 
 
@@ -156,11 +153,13 @@ class UserController extends Controller
 
 
         $values = [
-
-            "users.*", "cities.title_geo as city",
+            "users.*",
+            "cities.title_geo as city",
             "genders.title as gender",
             "social_statuses.title as socialStatus",
-            "salary_range.salary_range as salaryRange"
+            "salary_range.salary_range as salaryRange",
+            "client_companies.name as companyName",
+            "countries.title as countryName"
         ];
 
 
@@ -171,8 +170,11 @@ class UserController extends Controller
                 ->leftJoin('genders', 'users.gender', '=', 'genders.id')
                 ->leftJoin('social_statuses', 'users.social_id', '=', 'social_statuses.id')
                 ->leftJoin('salary_range', 'users.salary_id', '=', 'salary_range.id')
+                ->leftJoin('client_companies', 'users.company_id', '=', 'client_companies.id')
+                ->leftJoin('countries', 'users.citizenship', '=', 'countries.id')
                 ->offset( $request->offset )
                 ->limit( $request->limit )
+                ->orderBy("users.id")
                 ->get( $values );
 
 
@@ -186,6 +188,9 @@ class UserController extends Controller
     
     
 
+    
+    
+    
 
 
 
@@ -199,7 +204,6 @@ class UserController extends Controller
 
         if( $user === null )
              return response()->json("User Not Found !", 404 );
-
 
          return response()->json( $user, 404 ); 
     }
@@ -269,6 +273,8 @@ class UserController extends Controller
     
     
     
+    
+    
     public function spUsersSeeder( $user_id, $reg_number, $reg_date, $reg_org  )
     {
         $data = [
@@ -285,6 +291,8 @@ class UserController extends Controller
     
     
 
+    
+    
     
     
     

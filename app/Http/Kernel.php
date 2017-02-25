@@ -55,5 +55,6 @@ class Kernel extends HttpKernel
         'registration' => \App\Http\Middleware\RegistrationMiddleware::class,
         'cors' => \App\Http\Middleware\Cors::class,
         'AddUpdate' => \App\Http\Middleware\AddUpdateUserMiddleware::class,
+        'Cors' => \App\Http\Middleware\CorsMiddleware::class,
     ];
 }

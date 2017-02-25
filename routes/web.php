@@ -9,8 +9,6 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-// Personal Login
-Route::post('/plogin', 'PersonalController@login');
 
 // Account Check
 Route::post('/test', 'UserController@test');
