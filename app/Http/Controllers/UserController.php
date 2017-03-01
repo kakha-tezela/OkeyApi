@@ -17,32 +17,6 @@ use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\DB;
 
 
-//if( !isset($_GET["fields"]) )
-//{
-//    $fields = "*";
-//}
-//else
-//{
-//     $fields = $_GET["fields"];
-//}
-//if( !isset($_GET["where"]) )
-//{
-//     $where = "";
-//}
-//else 
-//{
-//     $where = str_replace("-","=",$_GET["where"]);
-//}
-//
-//else
-//{
-//    $sql ='SELECT $values FROM users '.$where.' 
-//
-//
-//}
-
-
-
 
 
 class UserController extends Controller
@@ -50,27 +24,23 @@ class UserController extends Controller
 
     public function search( Request $request )
     {
-        $values = [
-            "users.*",
-            "orders.id",
-        ];
-        
-        $data = DB::table('orders')
-                ->leftJoin('users', 'orders.user_id', '=', 'users.id')
-                ->get( $values );
-        
-        if( $data->count() > 0 )
-            return response()->json($data,200);
+        $fields = " users.id, users.person_status, users.firstname, users.lastname, users.reg_address, users.phys_address, users.work_place, cities.title_geo as cityName,"
+                . "genders.title as gender, countries.title as countryName, client_companies.name as companyName, social_statuses.title as socialStatus,"
+                . "salary_range.salary_range as salary";
         
         
-        return response()->json( "", 400 );
-        
+        return DB::select( 'Select DISTINCT '.$fields.' from orders LEFT JOIN users ON orders.user_id = users.id'
+                . ' LEFT JOIN genders ON users.gender = genders.id'
+                . ' LEFT JOIN cities ON users.city_id = cities.id'
+                . ' LEFT JOIN salary_range ON users.salary_id = salary_range.id'
+                . ' LEFT JOIN social_statuses ON users.social_id = social_statuses.id'
+                . ' LEFT JOIN countries ON users.citizenship = countries.id'
+                . ' LEFT JOIN client_companies ON users.company_id = client_companies.id where '.$request->where );
     }
 
     
-    
-    
-    
+                
+
 
 
     public function add( Request $request )
