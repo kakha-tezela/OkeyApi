@@ -43,5 +43,17 @@ class User extends Model implements AuthenticatableContract
     }
     
     
+    public function status()
+    {
+        return $this->belongsTo('App\UserStatus');
+    }
+    
+    
+    public function getStatusName()
+    {
+        return $this->status->title;
+    }
+    
+    
     
 }

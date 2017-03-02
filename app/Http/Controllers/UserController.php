@@ -18,29 +18,40 @@ use Illuminate\Support\Facades\DB;
 
 
 
-
 class UserController extends Controller
 {
+    
+    
+    public function getUserOrders( Request $request )
+    {
+        
+        $values = [ "personal.firstname", "personal.lastname", "orders.months", "orders.principal_price", "orders.interest", "orders.start_date", "orders.end_date", ];
+        
+        $orders = DB::table('users')
+                 ->leftJoin('orders', 'users.id', '=', 'orders.user_id')
+                 ->leftJoin('personal', 'orders.portfel_manager', '=', 'personal.id')
+                 ->where( 'orders.user_id', $request->user_id )
+                 ->orderBy('orders.create_date','desc')
+                 ->get( $values );
+        
+        return $orders;
+    }
+    
+    
+    
+    
 
     public function search( Request $request )
     {
-        $fields = " users.id, users.person_status, users.firstname, users.lastname, users.reg_address, users.phys_address, users.work_place, cities.title_geo as cityName,"
-                . "genders.title as gender, countries.title as countryName, client_companies.name as companyName, social_statuses.title as socialStatus,"
-                . "salary_range.salary_range as salary";
+        $fields = "users.id, users.person_status, users.firstname, users.lastname, user_status.title AS status";
         
-        
-        return DB::select( 'Select DISTINCT '.$fields.' from orders LEFT JOIN users ON orders.user_id = users.id'
-                . ' LEFT JOIN genders ON users.gender = genders.id'
-                . ' LEFT JOIN cities ON users.city_id = cities.id'
-                . ' LEFT JOIN salary_range ON users.salary_id = salary_range.id'
-                . ' LEFT JOIN social_statuses ON users.social_id = social_statuses.id'
-                . ' LEFT JOIN countries ON users.citizenship = countries.id'
-                . ' LEFT JOIN client_companies ON users.company_id = client_companies.id where '.$request->where );
+        return DB::select( 'Select DISTINCT '.$fields.' from users LEFT JOIN orders ON orders.user_id = users.id'
+                . ' LEFT JOIN user_status ON users.status = user_status.id WHERE '.$request->where );
     }
-
     
-                
-
+    
+    
+    
 
 
     public function add( Request $request )
@@ -117,65 +128,48 @@ class UserController extends Controller
 
     public function index( Request $request )
     {
-
-        if( !$request->has("offset") || !$request->has("limit"))
-            return response()->json("Limit Or Offset Not Provided !", 400 ); 
-
-
-        $values = [
-            "users.*",
-            "cities.title_geo as city",
-            "genders.title as gender",
-            "social_statuses.title as socialStatus",
-            "salary_range.salary_range as salaryRange",
-            "client_companies.name as companyName",
-            "countries.title as countryName"
-        ];
-
-
-        $limit = 25;
-
-        $data = DB::table('users')
-                ->leftJoin('cities', 'users.city_id', '=', 'cities.id')
-                ->leftJoin('genders', 'users.gender', '=', 'genders.id')
-                ->leftJoin('social_statuses', 'users.social_id', '=', 'social_statuses.id')
-                ->leftJoin('salary_range', 'users.salary_id', '=', 'salary_range.id')
-                ->leftJoin('client_companies', 'users.company_id', '=', 'client_companies.id')
-                ->leftJoin('countries', 'users.citizenship', '=', 'countries.id')
-                ->offset( $request->offset )
-                ->limit( $request->limit )
-                ->orderBy("users.id")
-                ->get( $values );
-
-
-        if( count( $data ) == 0 )
+        $users = DB::table('users')
+                 ->leftJoin('user_status', 'users.status', '=', 'user_status.id')
+                 ->orderBy('users.id','desc')
+                 ->limit(5)
+                 ->get(['users.id','users.person_status','users.firstname','users.lastname','user_status.title AS status']);
+        
+        if( count($users)== 0 )
             return response()->json("No User Found !", 404 );
 
-
-        return response()->json( $data, 200 );
-
+        return response()->json( $users, 200 );
     }
     
     
-
     
     
     
-
-
+    
+    
+    
 
     public function show( Request $request )
     {
         if( !$request->has('user_id') )
             return response()->json("User ID Not Provided !", 400 ); 
 
-
-        $user = User::where( 'id', $request->user_id )->first();
-
+        $values = ["users.*","countries.title AS countryName", "genders.title as gender", "cities.title_geo AS cityName", "client_companies.name AS companyName",
+            "social_statuses.title AS socialStatus", "salary_range.salary_range AS salary"];
+        
+        $user = DB::table('users')
+                ->leftJoin('countries', 'users.citizenship', '=', 'countries.id')
+                ->leftJoin('genders', 'users.gender', '=', 'genders.id')
+                ->leftJoin('cities', 'users.city_id', '=', 'cities.id')
+                ->leftJoin('client_companies', 'users.company_id', '=', 'client_companies.id')
+                ->leftJoin('social_statuses', 'users.social_id', '=', 'social_statuses.id')
+                ->leftJoin('salary_range', 'users.salary_id', '=', 'salary_range.id')
+                ->where( 'users.id', $request->user_id )
+                ->first($values);
+        
         if( $user === null )
              return response()->json("User Not Found !", 404 );
 
-         return response()->json( $user, 404 ); 
+         return response()->json( $user, 200 ); 
     }
 
 

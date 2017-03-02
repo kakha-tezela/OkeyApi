@@ -13,18 +13,45 @@ use Illuminate\Http\Request;
 |
 */
 
+
+
+
+
+//====== Order Operations ======
+
+Route::post('/order', 'OrderController@show');
+
+
+
+//====== Order Operations ======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //====== User Operations ======
+
+// User Search
+Route::post('/user/orders', 'UserController@getUserOrders');
 
 // User Search
 Route::post('/user/search', 'UserController@search');
 
-
-
 // Update User
 Route::post('/user/update', 'UserController@update');
 
+// Add User
 Route::post('/user/add', 'UserController@add')->middleware("Cors");
-
 
 // Get All Users
 Route::post('/users', 'UserController@index');
@@ -34,10 +61,12 @@ Route::post('/user/show', 'UserController@show');
 
 
 // Check User With PID
+
 Route::post('/checkuser', 'UserController@checkUser');
 
 
 // User Authorization
+
 Route::post('/login', 'UserController@login');
 
 //====== End OF User Operations ======
@@ -50,7 +79,6 @@ Route::post('/login', 'UserController@login');
 
 
 
-// Get invoice Information
 Route::post('/invoice', 'InvoiceController@getInvoiceInfo');
 
 Route::post('/invoiceproducts', 'InvoiceController@getInvoiceProducts');
