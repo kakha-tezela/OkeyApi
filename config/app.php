@@ -169,6 +169,15 @@ return [
 
         //
 
+       //
+        Zizaco\Entrust\EntrustServiceProvider::class,
+        Barryvdh\DomPDF\ServiceProvider::class,
+        Maatwebsite\Excel\ExcelServiceProvider::class,
+        Unisharp\Laravelfilemanager\LaravelFilemanagerServiceProvider::class,
+        Intervention\Image\ImageServiceProvider::class,
+        crocodicstudio\crudbooster\CRUDBoosterServiceProvider::class,
+        Yajra\Datatables\DatatablesServiceProvider::class,
+
         /*
          * Application Service Providers...
          */
@@ -177,6 +186,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        Lavary\Menu\ServiceProvider::class
 
     ],
 
@@ -227,6 +237,13 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
         'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
+        'Socialite' => Laravel\Socialite\Facades\Socialite::class,
+        'Entrust'   => Zizaco\Entrust\EntrustFacade::class,
+
+        'PDF' => Barryvdh\DomPDF\Facade::class,
+        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+        'CRUDBooster' => crocodicstudio\crudbooster\helpers\CRUDBooster::class,
+        'Menu'       => Lavary\Menu\Facade::class,
     ],
 
 ];

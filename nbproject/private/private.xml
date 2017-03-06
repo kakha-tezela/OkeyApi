@@ -3,14 +3,19 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-<<<<<<< Updated upstream
-            <file>file:/C:/xampp/htdocs/OkeyApi/routes/api.php</file>
-            <file>file:/C:/xampp/htdocs/OkeyApi/app/Http/Controllers/UserController.php</file>
-=======
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/AccountingController.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/Admin/Admire2Controller.php</file>
             <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/UserController.php</file>
-            <file>file:/D:/Ampps/www/OkeyApi/app/User.php</file>
-            <file>file:/D:/Ampps/www/OkeyApi/app/Personal.php</file>
->>>>>>> Stashed changes
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/AdminCmsUsersController.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/Auth/LoginController.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/config/auth.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/routes/web.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Middleware/AuthorizationMiddleware.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/Admin/HomeController.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Middleware/VerifyCsrfToken.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/config/app.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/PersonalController.php</file>
+            <file>file:/D:/Ampps/www/OkeyApi/app/Http/Controllers/Admin/PersonalsController.php</file>
         </group>
     </open-files>
 </project-private>

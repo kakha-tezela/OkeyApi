@@ -10,6 +10,42 @@
 |
 */
 
+Auth::routes();
+
+
+Route::get('/home', function () {
+    return view('admin/index');
+
+});
+
+Route::get('/logout', 'Auth\LoginController@logout');
+
+Route::get('test',function(){
+    dd(app('url'), app('url')->asset('assets/css/custom.css') );
+});
+
+
+Route::get('/', 'Admin\HomeController@index');
+Route::get('signature',function(){
+   return view('admin.includes.signature');
+});
+//'middleware' => ['role:Admin']
+Route::group(['namespace' => 'Admin', ], function () {
+
+    Route::resource('role', 'RoleController');
+
+    Route::resource('permission', 'PermissionController');
+
+    Route::resource('personal', 'PersonalsController');
+
+    Route::get('{name?}', 'Admire2Controller@showView');
+
+    Route::get('users', 'Admire2Controller@index');
+
+    Route::post('users', 'Admire2Controller@store');
+});
+
+
 // Account Check
 Route::post('/test', 'UserController@test');
 
@@ -36,8 +72,6 @@ Route::post('/checkuser', 'UserController@checkUser');
 // User Registration
 Route::post('/register', 'UserController@register')->middleware('registration');
 
-// User Authorization
-Route::post('/login', 'UserController@login');
 
 //Check Token
 Route::post('/checktoken', 'UserController@getAuthenticatedUser');
@@ -46,3 +80,5 @@ Route::post('/checktoken', 'UserController@getAuthenticatedUser');
 Route::post('/userdata', 'UserController@userData');
 
 Route::post('/okeyapi', 'MerchantController@processinvoice');
+
+

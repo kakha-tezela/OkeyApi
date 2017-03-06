@@ -7,7 +7,17 @@
     "require": {
         "php": ">=5.6.4",
         "laravel/framework": "5.3.*",
-        "tymon/jwt-auth": "^0.5.9"
+        "tymon/jwt-auth": "^0.5.9",
+        "intervention/image": "^2.3",
+        "zgabievi/tbc": "^0.1.0",
+        "predis/predis": "^1.1",
+        "laravel/socialite": "^2.0",
+        "zizaco/entrust": "5.2.x-dev",
+        "crocodicstudio/crudbooster": "5.3.1.*",
+        "yajra/laravel-datatables-oracle": "6.*",
+        "lavary/laravel-menu": "^1.6",
+        "barryvdh/laravel-elfinder": "^0.3.10",
+        "cviebrock/eloquent-sluggable" : "4.1"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

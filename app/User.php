@@ -1,59 +1,33 @@
 <?php
 
 namespace App;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
-class User extends Model implements AuthenticatableContract
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Zizaco\Entrust\Traits\EntrustUserTrait;
+
+
+class User extends Authenticatable
 {
-    use Authenticatable;
-    
+    use Notifiable;
+
     public $timestamps = false;
-    
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
-            'person_status',
-            'firstname',
-            'lastname',
-            'citizenship',
-            'gender',
-            'birth_date',
-            'reg_address',
-            'phys_address',
-            'city_id',
-            'phone',
-            'pid_number',
-            'personal_id',
-            'email',
-            'username',
-            'password',
-            'company_id',
-            'social_id',
-            'politic_person',
-            'work_place',
-            'salary_id',
-            'balance',
-            'status',
+        'firstname', 'lastname', 'email', 'phone', 'password', 'salt'
     ];
-    
-    
-    public function orders()
-    {
-        return $this->hasMany('App\Order');
-    }
-    
-    
-    public function status()
-    {
-        return $this->belongsTo('App\UserStatus');
-    }
-    
-    
-    public function getStatusName()
-    {
-        return $this->status->title;
-    }
-    
-    
-    
+
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
 }
