@@ -30,4 +30,16 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+<<<<<<< HEAD
+=======
+    
+    
+    public function orders()
+    {
+        return $this->hasMany('App\Order');
+    }
+    
+    
+    
+>>>>>>> parent of c464d01... feat: get order by id
 }

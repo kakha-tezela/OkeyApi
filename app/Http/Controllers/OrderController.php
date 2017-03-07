@@ -10,40 +10,6 @@ class OrderController extends Controller
 {
     
     
-    
-    
-    public function show( Request $request )
-    {
-        
-        if( !$request->has("order_id") )
-            return response()->json( "Order Id Not Provided", 400 );
-        
-        $order = Order::where('id', $request->order_id )->first();
-        
-        if( $order === null )
-            return response()->json( "Order Not Found", 404 );
-        
-        return response()->json( $order, 200 );
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
      public function createAnnuitySchedule( Request $request )
     {
         
