@@ -46,3 +46,8 @@ Route::post('/checktoken', 'UserController@getAuthenticatedUser');
 Route::post('/userdata', 'UserController@userData');
 
 Route::post('/okeyapi', 'MerchantController@processinvoice');
+
+
+Route::group(['prefix' => 'admin'], function () {
+    Voyager::routes();
+});
