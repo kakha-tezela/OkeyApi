@@ -11,42 +11,56 @@ class InvoiceController extends Controller
     
     public function getInvoiceInfo( Request $request )
     {
-        if( !$request->has( 'transaction_id' ) )
+        if( !$request->has( 'trans_id' ) )
             return response()->json("Transaction Id Not Provided");
         
         
         $result = [];
         
-        $data = DB::table('invoices')->select('invoices.id as InvioceId', 'invoices.price as invoicePrice', 'invoices.sum_price as invoiceSumPrice',
-                'invoices.address as invoiceAddress', 'invoices.city as invoiceCity', 'invoice_products.title as productTitle', 'invoice_products.price as productPrice', 
-                'invoice_products.quantity as productQuantity', 'categories.title_geo as productCategory' )
+        $data = DB::table('invoices')->select('invoices.id as InvioceId','invoices.shipping_price as shippingPrice','invoices.price as invoicePrice','invoices.sum_price as invoiceSumPrice',
+                'invoices.address as invoiceAddress', 'invoices.city as invoiceCity' )
                 ->leftJoin('merchant_history', 'merchant_history.invoice_id', '=', 'invoices.id' )
-                ->leftJoin('invoice_products', 'invoice_products.invoice_id', '=', 'invoices.id' )
-                ->leftJoin('categories', 'invoice_products.category_id', '=', 'categories.id' )
-                ->where('merchant_history.transaction_id', '=', $request->transaction_id )
+                ->where('merchant_history.transaction_id', '=', $request->trans_id )
                 ->get();
         
         
         
         foreach( $data as $row ):
             
-            $result['InvoiceInfo'] = [
+            $result = [
 
                 'invoiceId'         => $row->InvioceId,
+                'shippingPrice'     => $row->shippingPrice,
                 'invoicePrice'      => $row->invoicePrice,
                 'invoiceSumPrice'   => $row->invoiceSumPrice,
-            ];
-        
-            
-            $result['shipping'] = [
-                
                 'invoiceAddress' => $row->invoiceAddress,
                 'invoiceCity'    => $row->invoiceCity,
             ];
-            
-            
-            $result['products'][] = [
-                
+                                
+        endforeach;
+        
+        return $result;
+    }
+    
+    public function getInvoiceProducts( Request $request )
+    {
+        if( !$request->has( 'trans_id' ) )
+            return response()->json("Transaction Id Not Provided");
+        
+        
+        $result = [];
+        
+        $data = DB::table('merchant_history')->select( 'invoice_products.title as productTitle', 'invoice_products.price as productPrice', 
+                'invoice_products.quantity as productQuantity', 'categories.title_geo as productCategory' )
+                ->leftJoin('invoice_products', 'invoice_products.invoice_id', '=', 'merchant_history.invoice_id' )
+                ->leftJoin('categories', 'invoice_products.category_id', '=', 'categories.id' )
+                ->where('merchant_history.transaction_id', '=', $request->trans_id )
+                ->get();
+        
+        
+        
+        foreach( $data as $row ):
+            $result[] = [
                 'productTitle'      => $row->productTitle,
                 'productPrice'      => $row->productPrice,
                 'productQuantity'   => $row->productQuantity,

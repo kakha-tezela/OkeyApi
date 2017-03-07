@@ -9,8 +9,6 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-// Personal Login
-Route::post('/plogin', 'PersonalController@login');
 
 // Account Check
 Route::post('/test', 'UserController@test');
@@ -48,3 +46,8 @@ Route::post('/checktoken', 'UserController@getAuthenticatedUser');
 Route::post('/userdata', 'UserController@userData');
 
 Route::post('/okeyapi', 'MerchantController@processinvoice');
+
+
+Route::group(['prefix' => 'admin'], function () {
+    Voyager::routes();
+});
