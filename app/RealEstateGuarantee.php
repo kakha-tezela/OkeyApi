@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class RealEstateGuarantee extends Model
 {
+    
+    
     protected $table = "real_estate_guarantee";
+    
+    
     
     public function orders()
     {
@@ -14,14 +18,29 @@ class RealEstateGuarantee extends Model
     }
  
     
-    public function ownerFullName()
+    
+    
+    public function owners()
     {
-        return $this->belongsTo("App\User","owner","id");
+        return $this->belongsToMany( "App\Owner", "owner_guarantees", "guarantee_id", "owner_id" );
     }
+    
+    
+    
     
     
     public function currency()
     {
         return $this->belongsTo("App\Currency","currency_id","id");
     }
+    
+    
+    
+    
+    
+    public function RealEstateType()
+    {
+        return $this->belongsTo( "App\RealEstateType", "real_estate_type", "id" );
+    }
+    
 }
