@@ -18,4 +18,20 @@ class Order extends Model implements AuthenticatableContract
     }
     
     
+    
+    
+    public function CarGuarantee()
+    {
+        return $this->morphedByMany('App\CarGuarantee', 'guarantable');
+    }
+    
+    
+    
+    public function RealEstateGuarantee()
+    {
+        return $this->morphedByMany('App\RealEstateGuarantee', 'guarantable');
+    }
+    
+    
+    
 }

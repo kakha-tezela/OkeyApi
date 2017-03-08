@@ -25,7 +25,7 @@ class UserController extends Controller
     public function getUserOrders( Request $request )
     {
         
-        $values = [ "personal.firstname", "personal.lastname", "orders.months", "orders.principal_price", "orders.interest", "orders.start_date", "orders.end_date", ];
+        $values = [ "personal.firstname", "personal.lastname", "orders.id", "orders.months", "orders.principal_price", "orders.interest", "orders.start_date", "orders.end_date", ];
         
         $orders = DB::table('users')
                  ->leftJoin('orders', 'users.id', '=', 'orders.user_id')
@@ -153,7 +153,7 @@ class UserController extends Controller
         if( !$request->has('user_id') )
             return response()->json("User ID Not Provided !", 400 ); 
 
-        $values = ["users.*","countries.title AS countryName", "genders.title as gender", "cities.title_geo AS cityName", "client_companies.name AS companyName",
+        $values = ["users.*","countries.title AS countryName", "genders.title as genderTitle", "cities.title_geo AS cityName", "client_companies.name AS companyName",
             "social_statuses.title AS socialStatus", "salary_range.salary_range AS salary"];
         
         $user = DB::table('users')

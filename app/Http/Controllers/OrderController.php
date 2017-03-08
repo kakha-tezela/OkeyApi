@@ -10,6 +10,58 @@ class OrderController extends Controller
 {
     
     
+    public function getGuarantee( Request $request )
+    {
+        $order = Order::find( $request->order_id );
+        
+        $guarantees = [];
+        
+        foreach( $order->RealEstateGuarantee as $estate ):
+            
+            $guarantees[] =[
+                'id'                => $estate->id,
+                'guarantee_type'    => "უძრავი ქონება",
+                'order_number'      => $estate->order_number,
+                'liquid_price'      => $estate->liquid_price,
+                'market_price'      => $estate->market_price
+            ]; 
+        
+        endforeach;
+        
+        
+        
+        foreach( $order->CarGuarantee as $car ):
+            
+            $guarantees[] =[
+                'id'                => $car->id,
+                'guarantee_type'    => "ავტომობილი",
+                'order_number'      => $car->order_number,
+                'liquid_price'      => $estate->liquid_price,
+                'market_price'      => $car->market_price
+            ]; 
+            
+        endforeach;
+        
+        return $guarantees;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     public function show( Request $request )
@@ -18,7 +70,14 @@ class OrderController extends Controller
         if( !$request->has("order_id") )
             return response()->json( "Order Id Not Provided", 400 );
         
-        $order = Order::where('id', $request->order_id )->first();
+        
+        $values = ['personal.firstname as managerFirtname', 'personal.lastname as managerLastname', 'orders.*', 'users.id as userId', 'users.firstname as userFirstname', 'users.lastname as userLastname' ];
+        
+        $order = DB::table('orders')
+                 ->leftJoin('users', 'users.id', '=', 'orders.user_id')
+                 ->leftJoin('personal', 'orders.portfel_manager', '=', 'personal.id')
+                 ->where( 'orders.id', $request->order_id )
+                 ->first( $values );
         
         if( $order === null )
             return response()->json( "Order Not Found", 404 );

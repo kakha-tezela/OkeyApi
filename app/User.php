@@ -56,4 +56,10 @@ class User extends Model implements AuthenticatableContract
     
     
     
+    public function carGuarantee()
+    {
+        return $this->hasMany("App/CarGuarantee","owner","id");
+    }
+    
+    
 }
