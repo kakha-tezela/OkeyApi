@@ -6,12 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class RealEstateGuarantee extends Model
 {
-    
-    
+    protected $fillable = ['mortgagee_name'];
+    public $timestamps = false;
     protected $table = "real_estate_guarantee";
     
+//    ->select(['mortgage.title']);
     
-    
+    public function mortgage()
+    {
+        return $this->hasMany("App\Mortgage","guarantee_id","id")->select(['mortgage.title']);
+    }
+
+
+
+
     public function orders()
     {
         return $this->morphToMany('App\Order', 'guarantable');

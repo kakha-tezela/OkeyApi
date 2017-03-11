@@ -6,6 +6,22 @@ use Illuminate\Http\Request;
 class RealEstateController extends Controller
 {
     
+    
+    
+    public function updateGuarantee( Request $request )
+    {
+        $update = RealEstateGuarantee::find( $request->guarantee_id )->update( [ "mortgagee_name" => $request->mortgagee_name ] );
+    
+        if( $update )
+            return response()->json( "Ok", 200 );
+        
+        return response()->json( "Failed", 400 );
+    }
+    
+    
+    
+    
+    
     public function showGuarantee( Request $request )
     {
         $estate = RealEstateGuarantee::find( $request->guarantee_id );
@@ -16,11 +32,13 @@ class RealEstateController extends Controller
             
             $owners[] = [
                 "ownerFirstname" => $owner->firstname,
-                "ownerLirstname" => $owner->lastname,
+                "ownerLastname"  => $owner->lastname,
                 "ownerPid"       => $owner->personal_id,
+                "ownerPart"      => $owner->part,
             ];
         
         endforeach;
+        
         
         $data = [
             "id"                   => $estate->id,
@@ -33,16 +51,17 @@ class RealEstateController extends Controller
             "object_area"          => $estate->object_area,
             "location"             => $estate->location,
             "build_date"           => $estate->build_date,
-            "description"          => $estate->description,
             "estimation_date"      => $estate->estimation_date,
             "start_date"           => $estate->start_date,
             "end_date"             => $estate->end_date,
-            "comment"              => $estate->comment,
-            "estateType"           => $estate->RealEstateType->title,
             "mortgage"             => $estate->mortgage,
             "mortgagee_name"       => $estate->mortgagee_name,
             "mortgage_sequence"    => $estate->mortgage_sequence,
+            "estateType"           => $estate->RealEstateType->title,
             "owners"               => $owners,
+            "commitment"           => $estate->commitment,
+            "description"          => $estate->description,
+            "comment"              => $estate->comment,
         ];
 
         return $data;

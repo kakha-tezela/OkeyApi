@@ -37,6 +37,20 @@ class User extends Model implements AuthenticatableContract
     ];
     
     
+    
+    
+    
+    
+    public function suretyOrders()
+    {
+        return $this->belongsToMany( 'App\Order', 'order_sureties' );
+    } 
+    
+    
+    
+    
+    
+    
     public function orders()
     {
         return $this->hasMany('App\Order');

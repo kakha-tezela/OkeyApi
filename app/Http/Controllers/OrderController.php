@@ -10,6 +10,24 @@ class OrderController extends Controller
 {
     
     
+    public function getSchedule( Request $request )
+    {
+        return Order::find( $request->order_id )->schedule;
+    }
+    
+    
+    
+    
+    public function getSureties( Request $request )
+    {
+        return Order::find( $request->order_id )->suretyUsers;
+    }
+    
+    
+    
+    
+    
+    
     public function getGuarantee( Request $request )
     {
         $order = Order::find( $request->order_id );
@@ -44,14 +62,6 @@ class OrderController extends Controller
         
         return $guarantees;
     }
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     

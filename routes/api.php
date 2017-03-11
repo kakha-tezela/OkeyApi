@@ -15,13 +15,17 @@ use Illuminate\Http\Request;
 
 
 
-Route::post('/order/realestate/show', 'RealEstateController@showGuarantee');
-Route::post('/order/car/show', 'CarGuaranteeController@showGuarantee');
-
-
-
-
 //====== Order Operations ======
+
+Route::post('/order/schedule', 'OrderController@getSchedule');
+
+Route::post('/order/sureties', 'OrderController@getSureties');
+
+Route::post('/order/realestate/show', 'RealEstateController@showGuarantee');
+
+Route::post('/order/realestate/update', 'RealEstateController@updateGuarantee');
+
+Route::post('/order/car/show', 'CarGuaranteeController@showGuarantee');
 
 Route::post('/order', 'OrderController@show');
 
